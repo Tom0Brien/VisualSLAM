@@ -253,28 +253,24 @@ void quadricPlot_init(QuadricPlot & qp){
     qp.isInit  = true;
 
 }
-void quadricPlot_update(QuadricPlot & qp, const Eigen::VectorXd & murPNn, const Eigen::MatrixXd & SrPNn){ 
-    assert(qp.isInit);
+void quadricPlot_update(QuadricPlot & qp, const Eigen::VectorXd & murPNn, const Eigen::MatrixXd & SrPNn){
+    // assert(qp.isInit);
 
     const int nx = 3;
     assert(murPNn.rows() == nx);
     assert(SrPNn.rows() == nx);
     assert(SrPNn.cols() == nx);
-
     Eigen::MatrixXd Q;
     bounds_calculateMaxMinSigmaPoints(qp.bounds, murPNn, SrPNn, 6);
-
-
 
     // ---------------------------------------------------
     // TODO
     // ---------------------------------------------------
     double a0, a1, a2, a3, a4, a5, a6, a7, a8, a9;
 
-    std::cout << "Here" << std::endl;
 
     gaussianConfidenceQuadric3Sigma(murPNn,SrPNn,Q);
-    
+
     // Diagonals
     a0      = Q(0,0);
     a1      = Q(1,1);
@@ -289,9 +285,9 @@ void quadricPlot_update(QuadricPlot & qp, const Eigen::VectorXd & murPNn, const 
     a8      = 2*Q(2,3);
 
     // ---------------------------------------------------
-    // 
-    
-    
+    //
+
+
     qp.quadric->SetCoefficients(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
 
     double boundsVTK[6];
@@ -299,7 +295,7 @@ void quadricPlot_update(QuadricPlot & qp, const Eigen::VectorXd & murPNn, const 
     qp.sample->SetModelBounds(boundsVTK);
 }
 
-vtkActor * quadricPlot_getActor(const QuadricPlot & qp){ 
+vtkActor * quadricPlot_getActor(const QuadricPlot & qp){
     assert(qp.isInit);
 
     return qp.contourActor;
@@ -331,7 +327,7 @@ void frustumPlot_init(FrustumPlot & fp, const CameraParameters & param){
     for (int i = 0; i < rZCc2.cols(); ++i)
     {
         rZCc2.col(i)    << rZCc2_cv[i].x,  rZCc2_cv[i].y;
-    } 
+    }
 
     Eigen::MatrixXd rZCc(3,4), nrZCc;
     rZCc.fill(1);
@@ -343,7 +339,7 @@ void frustumPlot_init(FrustumPlot & fp, const CameraParameters & param){
         rZCc.col(i)            = rZCc.col(i) / nrZCc(0,i);
     }
 
-    
+
     double d            = 0.5;
     fp.rPCc.block(0,0,3,4) = d*rZCc;
     fp.rPCc.block(0,4,3,1) << 0,0,0;
@@ -372,13 +368,13 @@ void frustumPlot_init(FrustumPlot & fp, const CameraParameters & param){
     fp.pyramidActor = vtkSmartPointer<vtkActor>::New();
     fp.pyramidActor->SetMapper(fp.mapper);
     fp.pyramidActor->GetProperty()->SetColor(colors->GetColor3d("Tomato").GetData());
-    fp.pyramidActor->GetProperty()->SetOpacity(0.1);   
+    fp.pyramidActor->GetProperty()->SetOpacity(0.1);
 
     fp.isInit  = true;
 
 };
 
-void frustumPlot_update(FrustumPlot & fp, Eigen::VectorXd & eta){   
+void frustumPlot_update(FrustumPlot & fp, Eigen::VectorXd & eta){
     assert(fp.isInit);
 
     assert(eta.rows() == 6);
@@ -396,7 +392,7 @@ void frustumPlot_update(FrustumPlot & fp, Eigen::VectorXd & eta){
     fp.pyramidPts->SetPoint(2, fp.rPNn.col(2).data());
     fp.pyramidPts->SetPoint(3, fp.rPNn.col(3).data());
     fp.pyramidPts->SetPoint(4, fp.rPNn.col(4).data());
-    
+
     fp.pyramidPts->Modified();
     fp.ug->Modified();
     fp.mapper->Modified();
@@ -437,7 +433,7 @@ void axisPlot_init(AxisPlot & ap, vtkCamera * cam){
     ap.cubeAxesActor->GetTitleTextProperty(2)->SetFontSize(fontsize);
     ap.cubeAxesActor->GetLabelTextProperty(2)->SetColor(ap.axis3Color.GetData());
     ap.cubeAxesActor->GetLabelTextProperty(2)->SetFontSize(fontsize);
-    
+
     ap.cubeAxesActor->SetXTitle("N - [m]");
     ap.cubeAxesActor->SetYTitle("E - [m]");
     ap.cubeAxesActor->SetZTitle("D - [m]");
@@ -448,20 +444,20 @@ void axisPlot_init(AxisPlot & ap, vtkCamera * cam){
 
     // cubeAxesActor->SetFlyModeToStaticEdges();
     ap.cubeAxesActor->SetFlyModeToFurthestTriad();
-    ap.cubeAxesActor->SetUseTextActor3D(1); 
+    ap.cubeAxesActor->SetUseTextActor3D(1);
 
     ap.isInit  = true;
 
 }
 
-void axisPlot_update(AxisPlot & ap, Bounds & bounds){   
+void axisPlot_update(AxisPlot & ap, Bounds & bounds){
     assert(ap.isInit);
 
     double boundsVTK[6];
     bounds_getVTKBounds(bounds, boundsVTK);
 
     ap.cubeAxesActor->SetBounds(boundsVTK);
-    
+
 }
 
 vtkActor * axisPlot_getActor(AxisPlot & ap){
@@ -523,7 +519,7 @@ void basisPlot_init(BasisPlot & bp){
     bp.colorSet->InsertNextTupleValue(colors->GetColor3ub("green").GetData());
     bp.colorSet->InsertNextTupleValue(colors->GetColor3ub("blue").GetData());
 
-    bp.linesPolyData->GetCellData()->SetScalars(bp.colorSet);        
+    bp.linesPolyData->GetCellData()->SetScalars(bp.colorSet);
 
     // https://discourse.vtk.org/t/how-to-update-adjacent-vtkpolydata-instances-after-a-transformation/1325
     bp.basisMapper = vtkSmartPointer<vtkPolyDataMapper>::New();
@@ -549,7 +545,7 @@ void basisPlot_update(BasisPlot & bp, const Eigen::VectorXd & eta){
     Eigen::MatrixXd Rnc;
     rpy2rot(Thetanc, Rnc);
 
-    double basisScale   = 0.2; 
+    double basisScale   = 0.2;
     bp.rPNn             = (basisScale*Rnc).colwise() + bp.rCNn;
 
 
@@ -578,7 +574,7 @@ void imagePlot_init(ImagePlot & ip, double rendererWidth, double rendererHeight)
     ip.imageMapper->SetInputData(ip.viewVTK);
     ip.imageMapper->SetColorWindow(255.0);
     ip.imageMapper->SetColorLevel(127.5);
-    
+
     ip.imageActor2d = vtkSmartPointer<vtkActor2D>::New();
     ip.imageActor2d->SetMapper(ip.imageMapper);
     ip.isInit  = true;
@@ -664,7 +660,7 @@ void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const
 }
 
 void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles){
-    
+
     int nx_all  = mu.rows();
     assert(S.rows() == nx_all);
     assert(S.cols() == nx_all);
@@ -691,11 +687,11 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     murCNn = mu.segment(0,3);
     Eigen::HouseholderQR<Eigen::MatrixXd> qr(S.middleCols(0,3));
     SrCNn = Eigen::MatrixXd(qr.matrixQR().triangularView<Eigen::Upper>()).block(0,0,3,3);
-    
+
 
     // ---------------------------------------------------
-    // 
-    double r,g,b;   
+    //
+    double r,g,b;
     hsv2rgb(330, 1., 1., r, g, b);
     std::cout << "murCNn " << murCNn << std::endl;
     std::cout << "murCNn rows" << murCNn.rows() << std::endl;
@@ -716,7 +712,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
 
 
     Bounds globalBounds;
-    bounds_setExtremity(handles.qp_camera.bounds, globalBounds); 
+    bounds_setExtremity(handles.qp_camera.bounds, globalBounds);
 
     cv::Mat outView;
     outView     = view.clone();
@@ -734,7 +730,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
         Eigen::HouseholderQR<Eigen::MatrixXd> qr(S.middleCols(nx+i*6,3));
         SrPNn = Eigen::MatrixXd(qr.matrixQR().triangularView<Eigen::Upper>()).block(0,0,3,3);
         // ---------------------------------------------------
-        // 
+        //
 
 
         // Add components to render
@@ -745,13 +741,12 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
         rgb(2) = b*255;
 
         plotFeatureGaussianConfidenceEllipse(outView, murPNn, SrPNn, eta, param, rgb);
-        
+
         QuadricPlot & qp = handles.qp_features[i];
         quadricPlot_update(qp, murPNn, SrPNn);
         quadricPlot_getActor(qp)->GetProperty()->SetOpacity(0.5);
         quadricPlot_getActor(qp)->GetProperty()->SetColor(r,g,b);
-        bounds_setExtremity(qp.bounds, globalBounds); 
-
+        bounds_setExtremity(qp.bounds, globalBounds);
     }
 
 
@@ -760,7 +755,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     basisPlot_update    (handles.bp, eta);
     frustumPlot_update  (handles.fp, eta);
     imagePlot_update    (handles.ip, outView);
-    
+
     handles.threeDimRenderer->GetActiveCamera()->Azimuth(0);
     handles.threeDimRenderer->GetActiveCamera()->Elevation(165);
 
@@ -777,7 +772,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
 
 
 void plotFeatureGaussianConfidenceEllipse(cv::Mat & img, const Eigen::VectorXd & murPNn, const Eigen::MatrixXd & SrPNn, const Eigen::VectorXd & eta, const CameraParameters & param, const Eigen::Vector3d & color){
-    
+
     const int nx  = 3;
     assert(murPNn.rows() == nx);
     assert(SrPNn.rows() == nx);
@@ -791,8 +786,8 @@ void plotFeatureGaussianConfidenceEllipse(cv::Mat & img, const Eigen::VectorXd &
     // TODO
     // ---------------------------------------------------
 
-    // Calculate and draw the 3 sigma confidence region of 
-    // (murPNn, SrPNn) onto the image as an ellipse parametrised 
+    // Calculate and draw the 3 sigma confidence region of
+    // (murPNn, SrPNn) onto the image as an ellipse parametrised
     // by (murQOi, SrQOi)
     Eigen::VectorXd  muimage;
     Eigen::MatrixXd Skimage;
@@ -813,8 +808,8 @@ void plotFeatureGaussianConfidenceEllipse(cv::Mat & img, const Eigen::VectorXd &
     }
 
     // ---------------------------------------------------
-    // 
-    
+    //
+
 }
 
 

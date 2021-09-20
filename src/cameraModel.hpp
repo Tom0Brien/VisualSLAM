@@ -23,9 +23,9 @@ struct CameraParameters{
 };
 
 // ---------------------------------------------------------------------
-// 
+//
 // Camera calibration
-// 
+//
 // ---------------------------------------------------------------------
 
 // bool detectChessBoard(const Settings & s, const cv::Mat & view, std::vector<cv::Point2f> & rQOi);
@@ -43,9 +43,9 @@ void generateCalibrationGrid(const Settings & s, std::vector<cv::Point3f> & rPNn
 void importCalibrationData(const std::filesystem::path & calibrationFilePath, CameraParameters & param);
 
 // ---------------------------------------------------------------------
-// 
+//
 // worldToPixel
-// 
+//
 // ---------------------------------------------------------------------
 
 template<typename Scalar>
@@ -66,7 +66,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     Matrix Rcn, Rnc;
     Vector rCNn, Thetanc, rPCc, rQCc, uQCc;
-
+    rQOi.resize(2,1);
     rCNn        = eta.head(3);
     Thetanc     = eta.tail(3);
 
@@ -159,7 +159,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
 
     // Scalar Variables
-    Scalar  
+    Scalar
             alpha,
             beta,
             c,
@@ -202,14 +202,13 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     up      = c*u + p1*2*u*v + p2*(r2 + 2*u2) + s1*r2 + s2*r4;
     vp      = c*v + p2*2*u*v + p1*(r2 + 2*v2) + s3*r2 + s4*r4;
-
-    rQOi.resize(2,1);
     rQOi    << fx*up + cx, fy*vp + cy;
+    std::cout << "rQOi in w2p: " << rQOi << std::endl;
 
     bool isInWidth  = 0 <= rQOi(0) && rQOi(0) <= param.imageSize.width-1;
     bool isInHeight = 0 <= rQOi(1) && rQOi(1) <= param.imageSize.height-1;
     if (!(isInWidth && isInHeight)){
-        // Pixel is not within the image 
+        // Pixel is not within the image
         return 2;
     }
 
@@ -217,9 +216,9 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 }
 
 // ---------------------------------------------------------------------
-// 
+//
 // WorldToPixelAdaptor
-// 
+//
 // ---------------------------------------------------------------------
 struct WorldToPixelAdaptor{
     int operator()(const Eigen::VectorXd & rPNn, const Eigen::VectorXd & eta, const CameraParameters & param, Eigen::VectorXd & rQOi);

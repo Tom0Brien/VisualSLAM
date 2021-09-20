@@ -26,7 +26,7 @@
 #include "utility.h"
 
 #define __DEBUG__(X) {std::cout << "In " << __FUNCTION__ << " at Line " << __LINE__ << ": " <<X << std::endl;};
-#define DEBUG(X) __DEBUG__(X) 
+#define DEBUG(X) __DEBUG__(X)
 
 static void write(cv::FileStorage& fs, const std::string&, const CameraParameters& x)
 {
@@ -183,10 +183,9 @@ void runCalibration(const Settings & s, const std::vector<std::vector<cv::Point2
         rPNn.push_back(rPNn_base);
     }
 
-    
+
     double rms=-1;
     if( !rQOi_set.empty() ){
-        std::cout << "here" << std::endl;
         // ------------------------------------------------------------
         // Run camera calibration
         // ------------------------------------------------------------
@@ -198,7 +197,7 @@ void runCalibration(const Settings & s, const std::vector<std::vector<cv::Point2
         double rms = cv::calibrateCamera(rPNn, rQOi_set, imageSize, cameraMatrix, distCoeffs, R, rNCc, flag);
         std::cout << "Calibration rms: " << rms << std::endl;
         // ------------------------------------------------------------
-        // Write parameters to the data struct 
+        // Write parameters to the data struct
         // ------------------------------------------------------------
         param.Kc = cameraMatrix;
         param.distCoeffs = distCoeffs;
@@ -226,9 +225,9 @@ void generateCalibrationGrid(const Settings & s, std::vector<cv::Point3f> & rPNn
 
 
 // ---------------------------------------------------------------------
-// 
+//
 // WorldToPixelAdaptor
-// 
+//
 // ---------------------------------------------------------------------
 int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::VectorXd & eta, const CameraParameters & param, Eigen::VectorXd & rQOi){
 
@@ -239,6 +238,7 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     assert(eta.cols() == 1);
 
     int err = worldToPixel(rPNn, eta, param, rQOi);
+    std::cout << "rQOi in w2p: " << rQOi << std::endl;
     if (err){
         return err;
     }
@@ -252,6 +252,7 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
 int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::VectorXd & eta, const CameraParameters & param, Eigen::VectorXd & rQOi, Eigen::MatrixXd & SR){
 
     int res = operator()(rPNn, eta, param, rQOi);
+    std::cout << "rQOi in w2p: " << rQOi << std::endl;
     SR      = Eigen::MatrixXd::Zero(rQOi.rows(), rQOi.rows());
     return res;
 }
@@ -353,7 +354,7 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
 
 
     // Scalar Variables
-    double  
+    double
             alpha,
             beta,
             c,
@@ -411,21 +412,21 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     dvdr.resize(1,3);
     dvdr << 0, 1/z, -y/z*z;
 
-    double drdu = pow(u2 + v2,-0.5)*u; 
-    double drdv = pow(u2 + v2,-0.5)*v; 
+    double drdu = pow(u2 + v2,-0.5)*u;
+    double drdv = pow(u2 + v2,-0.5)*v;
 
-    double dalphadr = 2*k1*r + 4*k2*r3 + 6*k3*r5; 
+    double dalphadr = 2*k1*r + 4*k2*r3 + 6*k3*r5;
     double dbetadr = 2*k4*r + 4*k5*r3 + 6*k6*r5;
 
-    double dcdr = (dalphadr*(1+beta)-(1+alpha)*dbetadr)/((1+beta)*(1+beta)); 
+    double dcdr = (dalphadr*(1+beta)-(1+alpha)*dbetadr)/((1+beta)*(1+beta));
 
-    double duddu = dcdr*drdu*u + c + 2*p1*v + p2*(2*r*drdu + 4*u) + 2*s1*r*drdu + 4*s2*r3*drdu; 
+    double duddu = dcdr*drdu*u + c + 2*p1*v + p2*(2*r*drdu + 4*u) + 2*s1*r*drdu + 4*s2*r3*drdu;
 
-    double duddv = dcdr*drdv*u + 2*p1*u + p2*(2*r*drdv) + 2*s1*r*drdv + 4*s2*r3*drdv;  
+    double duddv = dcdr*drdv*u + 2*p1*u + p2*(2*r*drdv) + 2*s1*r*drdv + 4*s2*r3*drdv;
 
-    double dvddu = dcdr*drdu*v + 2*p2*v + p1*(2*r*drdu) + 2*s3*r*drdu + 4*s4*r3*drdu; 
+    double dvddu = dcdr*drdu*v + 2*p2*v + p1*(2*r*drdu) + 2*s3*r*drdu + 4*s4*r3*drdu;
 
-    double dvddv = dcdr*drdv*v + c + 2*p2*u + p1*(2*r*drdv + 4*v) + 2*s3*r*drdv + 4*s4*r3*drdv; 
+    double dvddv = dcdr*drdv*v + c + 2*p2*u + p1*(2*r*drdv + 4*v) + 2*s3*r*drdv + 4*s4*r3*drdv;
 
 
 

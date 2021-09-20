@@ -1,7 +1,7 @@
 #include <filesystem>
 #include <string>
 #include "SLAM.h"
-#include "model.h"
+#include "model.hpp"
 
 #include <iostream>
 
@@ -20,6 +20,7 @@
 
 #include "imagefeatures.h"
 #include "plot.h"
+#include "cameraModel.hpp"
 
 
 
@@ -47,13 +48,16 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     }
 
     //Define process model and measurement model
-    SlamParameters       slamparam;
-    SlamProcessModel       pm;
-    SlamMeasurementModel   mm;
+    SlamProcessModel     pm;
+    SlamLogLikelihood    ll;
+    SlamParameters slamparam;
+    CameraParameters camera_param;
+    importCalibrationData(cameraDataPath.string(), camera_param);
+    slamparam.camera_param = camera_param;
 
     //Initialise the states
     int nx, ny;
-    nx              = 12;
+    nx              = 12; // Camera states
     ny              = 0;
     Eigen::VectorXd x0(nx);
     Eigen::VectorXd muEKF(nx);
@@ -89,14 +93,18 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     std::cout << "Lets slam lads" << std::endl;
     int count = 0;
     std::vector<int> marker_ids;
+
     Eigen::Matrix<double, Eigen::Dynamic, 1> Thetacm;
     Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanc;
     Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanm;
     Eigen::Matrix<double, Eigen::Dynamic, 1> rMNn;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnm;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnc;
+
+
+
     Eigen::VectorXd u;
-    double timestep = 0.1;
+    double timestep = 0.01;
     while(cap.isOpened()){
         cap >> view;
         if(view.empty()){
@@ -109,10 +117,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // ****** 1. Perform time update to current frame time ******/////
 
         // Calculate prediction density
-        timeUpdateContinuous(muEKF, SEKF, u, pm,slamparam, timestep, mup, Sp);
+        timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
 
         // ****** 2. Identify landmarks with matching features ******/////
+        slamparam.landmarks_seen.clear();
         std::vector<Marker> detected_markers;
+        int n_measurements;
         detectAndDrawArUco(view, imgout, detected_markers, param);
         // Check all detected markers, if there is a new marker update the state else if max ID not met add ID to list and initialize a new landmark
         for(int i = 0; i < detected_markers.size(); i++){
@@ -125,49 +135,69 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             if(it != marker_ids.end()) {
                 int j = it - marker_ids.begin();
                 std::cout << "Marker ID: " << detected_markers[i].id << " found, update state, landmark (j) :" << j << std::endl;
-                rot2rpy(detected_markers[i].Rcm,Thetacm);
-                Thetanc = muEKF.block(3,0,3,1);
-                rpy2rot(Thetanc, Rnc);
-                Rnm = Rnc*detected_markers[i].Rcm;
-                rot2rpy(Rnm,Thetanm);
-                rMNn = muEKF.block(3,0,3,1) + Rnc*detected_markers[i].rMCc;
-                muEKF.block(nx + j*6,0,6,1) << rMNn, Thetanm;
+
+                // Add pixel location of corners to measurement yk
+                n_measurements = yk.rows();
+                yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+8,1));
+                for(int c = 0; c < 4; c++) {
+                    Eigen::Vector2d rJcNn;
+                    rJcNn << detected_markers[i].corners[c].x, detected_markers[i].corners[c].y;
+                    yk.block(n_measurements+c*2,0,2,1) = rJcNn;
+                }
+                std::cout << "yk: " << yk << std::endl;
+                // Add index j to landmark seen vector
+                slamparam.landmarks_seen.push_back(j);
             } else {
                 std::cout << "Marker ID: " << detected_markers[i].id << " not found in list, add new landmark" << std::endl;
+
+                // Add new landmark to now seen list
                 marker_ids.push_back(detected_markers[i].id);
-                //Reize the state matrix
-                SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(muEKF.rows()+6,muEKF.rows()+6));
+
+                //Reize the state and predicted state matrix
+                int n_states = muEKF.rows();
+                SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
+                Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
+                double kappa = 1e6;
                 for(int k = 0; k < 6; k++){
-                    SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = 0.1;
+                    SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
+                    Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
                 }
-                //Add new landmark
-                muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(muEKF.rows()+6,1));
-                rot2rpy(detected_markers[i].Rcm,Thetacm);
-                Thetanc = muEKF.block(3,0,3,1);
-                rpy2rot(Thetanc, Rnc);
-                Rnm = Rnc*detected_markers[i].Rcm;
-                rot2rpy(Rnm,Thetanm);
-                rMNn = muEKF.block(3,0,3,1) + Rnc*detected_markers[i].rMCc;
-                muEKF.block(muEKF.rows()-6,0,6,1) << rMNn, Thetanm;
-                std::cout << "muEKF" << muEKF << std::endl;
-                std::cout << "muEKF rows" << muEKF.rows() << std::endl;
-                std::cout << "muEKF cols" << muEKF.cols() << std::endl;
-                std::cout << "rMCc" << detected_markers[i].rMCc << std::endl;
-                // std::cout << "SEKF" << SEKF << std::endl;
-                std::cout << "SEKF rows" << SEKF.rows() << std::endl;
-                std::cout << "SEKF cols" << SEKF.cols() << std::endl;
+                muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
+                mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
+
+
+                // Add initial good guess
+                // rot2rpy(detected_markers[i].Rcm,Thetacm);
+                // Thetanc = mup.block(9,0,3,1);
+                // rpy2rot(Thetanc, Rnc);
+                // Rnm = Rnc*detected_markers[i].Rcm;
+                // rot2rpy(Rnm,Thetanm);
+                // rMNn = mup.block(6,0,3,1) + Rnc*detected_markers[i].rMCc;
+                // mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
+
+                // Add to measurement to vector yk
+                n_measurements = yk.rows();
+                yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+8,1));
+                for(int c = 0; c < 4; c++) {
+                    Eigen::Vector2d rJcNn;
+                    rJcNn << detected_markers[i].corners[c].x, detected_markers[i].corners[c].y;
+                    yk.block(n_measurements+c*2,0,2,1) = rJcNn;
+                }
+                // Add index j to landmark seen vector
+                slamparam.landmarks_seen.push_back((n_states-nx)/6);
+                std::cout << "yk: " << yk << std::endl;
 
                 initPlotStates(muEKF, SEKF, param, tmpHandles);
             }
         }
 
-        // if(muEKF.rows() > nx) {
-            updatePlotStates(imgout, muEKF, SEKF, param, tmpHandles);
-        // }
+        std::cout << "landmarks seen size : " << slamparam.landmarks_seen.size() << std::endl;
+        updatePlotStates(imgout, muEKF, SEKF, param, tmpHandles);
+
         // -------------------------
         // Attach interactor for playing with the 3d interface
         // -------------------------
-        if(interactive > 0) {
+        if(interactive == 2) {
 
             vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
             vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
@@ -177,19 +207,39 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
 
             threeDimInteractor->Initialize();
-            threeDimInteractor->Start(); 
+            threeDimInteractor->Start();
+            int wait = cv::waitKey(1);
         }
         //*********** 3. Remove failed landmarks from map (consecutive failures to match) **************//
 
         //*********** 4. Identify surplus features that do not correspond to landmarks in the map **************//
 
         //*********** 5. Initialise up to Nmax – N new landmarks from best surplus features **************//
-        
-        //*********** 6. Perform measurement update 
+
+        //*********** 6. Perform measurement update
         // Calculate filtered density
-        measurementUpdateEKF(mup, Sp, u, yk, mm,slamparam, muf, Sf);
+
+        std::cout << "mup : " << mup << std::endl;
+        std::cout << "Sp : " << Sp << std::endl;
+        std::cout << "Sp.rows() : " << Sp.rows() << std::endl;
+        // assert(0);
+        measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
         muEKF               = muf;
         SEKF                = Sf;
 
+        if (muEKF.hasNaN()){
+            std::cout << "NaNs encountered in muEKF. muEKF = \n" << muEKF << std::endl;
+            return;
+        }
+        if (SEKF.hasNaN()){
+            std::cout << "NaNs encountered in SEKF. S = \n" << SEKF << std::endl;
+            return;
+        }
+
+        std::cout << "muEKF: " << muEKF << std::endl;
+        std::cout << "SEKF: " << SEKF << std::endl;
+        std::cout << "muEKF.rows(): " << muEKF.rows() << std::endl;
+        std::cout << "SEKF.rows(): " << SEKF.rows() << std::endl;
+        // assert(0);
     }
 }

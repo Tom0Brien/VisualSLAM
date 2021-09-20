@@ -11,6 +11,8 @@
 #include <Eigen/Core>
 #include <Eigen/QR>
 
+#include "fmin.hpp"
+
 void conditionGaussianOnMarginal(const Eigen::VectorXd & muyxjoint, const Eigen::MatrixXd & Syxjoint, const Eigen::VectorXd & y, Eigen::VectorXd & muxcond, Eigen::MatrixXd & Sxcond);
 void gaussianConfidenceEllipse3Sigma(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, Eigen::MatrixXd & x);
 void gaussianConfidenceQuadric3Sigma(const Eigen::VectorXd &mu, const Eigen::MatrixXd & S, Eigen::MatrixXd & Q);
@@ -19,9 +21,9 @@ void gaussianConfidenceQuadric3Sigma(const Eigen::VectorXd &mu, const Eigen::Mat
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // logGaussian
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 
@@ -36,7 +38,7 @@ Scalar logGaussian(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> &x,
     assert(S.rows() == S.cols());
     assert(S.rows() == x.size());
 
-    Scalar n = x.rows();    
+    Scalar n = x.rows();
     Scalar log_sum = S.diagonal().array().abs().log().sum();
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> Z = S.template triangularView<Eigen::Upper>().transpose().solve(x - mu);
     return -0.5*Z.squaredNorm() - n/2*std::log(2*M_PI) - log_sum;
@@ -62,7 +64,7 @@ Scalar logGaussian(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> &x,
                    Eigen::Matrix<Scalar,Eigen::Dynamic,1> &g,
                    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> &H)
 {
-    // TODO: Compute Hessian of log N(x;mu,P) w.r.t x 
+    // TODO: Compute Hessian of log N(x;mu,P) w.r.t x
     // S\(S.'\I)
     H = -S.template triangularView<Eigen::Upper>().solve(
             S.template triangularView<Eigen::Upper>().transpose().solve(
@@ -75,9 +77,9 @@ Scalar logGaussian(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> &x,
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // affineTransform
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <typename Func>
@@ -94,7 +96,7 @@ void affineTransform(
     assert(Sxx.cols() == Sxx.rows());
     assert(mux.rows() == Sxx.rows());
 
-        // TODO: Transform function
+    // TODO: Transform function
     Eigen::MatrixXd SR;
     Eigen::MatrixXd C;
     h(mux,muy,SR,C);
@@ -113,6 +115,7 @@ void affineTransform(
     Eigen::MatrixXd A(Sxx.rows()+SR.rows(), SR.cols());
     A << Sxx*C.transpose(),SR;
 
+
     Eigen::HouseholderQR<Eigen::MatrixXd> qr(A);
     Eigen::MatrixXd R;
     R = qr.matrixQR().triangularView<Eigen::Upper>();
@@ -122,13 +125,13 @@ void affineTransform(
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // Augment Gradients
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <
-    typename ProcessFunc, 
+    typename ProcessFunc,
     typename ParamStruct
 >
 void augmentGradients(ProcessFunc func, const Eigen::MatrixXd & X, const Eigen::VectorXd & u, ParamStruct & param, Eigen::MatrixXd & dX)
@@ -153,13 +156,13 @@ void augmentGradients(ProcessFunc func, const Eigen::MatrixXd & X, const Eigen::
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // RK4SDEHelper
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <
-    typename ProcessFunc, 
+    typename ProcessFunc,
     typename ParamStruct
 >
 struct RK4SDEHelper
@@ -230,13 +233,13 @@ struct RK4SDEHelper
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // AugmentIdentityAdapter
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <
-    typename Func, 
+    typename Func,
     typename ParamStruct
 >
 struct AugmentIdentityAdapter
@@ -247,11 +250,11 @@ struct AugmentIdentityAdapter
         Eigen::VectorXd y;
         h(x, u, param, y);
         assert(y.size()>0);
-        
+
         int nx  = x.size();
         int ny  = y.size();
         int nyx = ny + nx;
-        
+
         yx.resize(nyx);
 
         yx.head(ny)                 = y;
@@ -264,11 +267,11 @@ struct AugmentIdentityAdapter
 
         Eigen::VectorXd y;
         Eigen::MatrixXd SR;
-        
+
         h(x, u, param, y, SR);
         assert(y.size()>0);
         assert(SR.size()>0);
-        
+
         int nx  = x.size();
         int ny  = y.size();
         int nyx = nx + ny;
@@ -295,11 +298,11 @@ struct AugmentIdentityAdapter
         assert(y.size()>0);
         assert(SR.size()>0);
         assert(C.size()>0);
-        
+
         int nx                      = x.size();
         int ny                      = y.size();
         int nyx                     = nx + ny;
-            
+
         CI.resize(nyx, nx);
         SRR.resize(nyx, nyx);
         yx.resize(nyx);
@@ -319,9 +322,9 @@ struct AugmentIdentityAdapter
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // timeUpdateContinuous
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <typename ProcessFunc, typename ParamStruct>
@@ -355,21 +358,22 @@ void timeUpdateContinuous(
     Sxdw.fill(0.);
     Sxdw.topLeftCorner(mukm1.size(), mukm1.size())      = Skm1;
     Sxdw.bottomRightCorner(mukm1.size(), mukm1.size())  = SQ*std::sqrt(timestep);
-    
+
     // RK4SDEHelper::operator()(func, xdw, u, param, dt, f, SR, J)
     // https://www.cplusplus.com/reference/functional/bind/
     RK4SDEHelper<ProcessFunc, ParamStruct> func;
     auto h  = std::bind(func, pm, std::placeholders::_1, u, param, timestep, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 
     affineTransform(muxdw, Sxdw, h, muk, Sk);
+    std::cout << "HERE" <<std::endl;
 }
 
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // measurementUpdateEKF
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <typename Func, typename ParamStruct>
@@ -409,9 +413,9 @@ void measurementUpdateEKF(
 
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
-// 
+//
 // measurementUpdateIEKF
-// 
+//
 // --------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------
 template <typename LogLikFunc, typename ParamStruct>
@@ -436,19 +440,19 @@ struct CostJointDensity
 
 template <typename Func, typename ParamStruct>
 void measurementUpdateIEKF(
-    const Eigen::VectorXd       & mux,      // Input
-    const Eigen::MatrixXd       & Sxx,      // Input
-    const Eigen::VectorXd         & u,      // Input
-    const Eigen::VectorXd         & y,      // Input
-    Func                logLikelihood,      // Model
-    const ParamStruct         & param,      // Input
-    Eigen::VectorXd           & muxGy,      // Output
-    Eigen::MatrixXd           & SxxGy       // Output
+    const Eigen::VectorXd       & mux,        // Input
+    const Eigen::MatrixXd       & Sxx,        // Input
+    const Eigen::VectorXd         & u,        // Input
+    const Eigen::VectorXd         & y,        // Input
+    Func                logLikelihood,        // Model
+    const ParamStruct         & param,        // Input
+    Eigen::VectorXd           & muxGy,        // Output
+    Eigen::MatrixXd           & SxxGy         // Output
     )
 {
     assert(mux.size()>0);
 
-    // Create cost function with prototype 
+    // Create cost function with prototype
     // V = cost(x, g, H)
     CostJointDensity<Func, ParamStruct> cjd;
     using namespace std::placeholders;
