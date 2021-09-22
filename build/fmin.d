@@ -1,32 +1,4 @@
-build/main.o: src/main.cpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/cvdef.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/version.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/hal/interface.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/cv_cpu_dispatch.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/base.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/opencv_modules.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/cvstd.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/cvstd_wrapper.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/neon_utils.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/vsx_utils.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/check.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/traits.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/matx.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/saturate.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/fast_math.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/types.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/mat.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/bufferpool.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/mat.inl.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/persistence.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/operations.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/cvstd.inl.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/utility.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/optim.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/ovx.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/core/cvdef.h src/settings.h \
- src/cameraModel.hpp C:/msys64/mingw64/include/eigen3/Eigen/Core \
+build/fmin.o: src/fmin.cpp C:/msys64/mingw64/include/eigen3/Eigen/Core \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/DisableStupidWarnings.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/Macros.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/MKL_support.h \
@@ -143,129 +115,7 @@ build/main.o: src/main.cpp \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/ArrayWrapper.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/GlobalFunctions.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/ReenableStupidWarnings.h \
- C:/msys64/mingw64/include/opencv4/opencv2/calib3d.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/features2d.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/flann/miniflann.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/flann/defines.h \
- C:/msys64/mingw64/include/opencv4/opencv2/flann/config.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/affine.hpp \
- src/rotation.hpp src/SLAM.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/eigen.hpp \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/Tensor \
- C:/msys64/mingw64/include/eigen3/Eigen/Core \
- C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/DisableStupidWarnings.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/SpecialFunctions \
- C:/msys64/mingw64/include/eigen3/Eigen/Core \
- C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/DisableStupidWarnings.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsImpl.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsPacketMath.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsHalf.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsFunctors.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/src/SpecialFunctions/SpecialFunctionsArrayAPI.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/ReenableStupidWarnings.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/util/CXX11Meta.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/util/EmulateArray.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/util/CXX11Workarounds.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/util/MaxSizeVector.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMacros.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorForwardDeclarations.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMeta.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFunctors.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorCostModel.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceDefault.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceThreadPool.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceCuda.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDeviceSycl.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIndexList.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensionList.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDimensions.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorInitializer.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorTraits.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRandom.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorUInt128.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIntDiv.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorGlobalFunctions.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBase.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorEvaluator.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorExpr.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReduction.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReductionCuda.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorArgMax.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConcatenation.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionMapper.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionBlocking.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContraction.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionThreadPool.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorContractionCuda.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConversion.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorConvolution.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFFT.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorPatch.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorImagePatch.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorVolumePatch.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorBroadcasting.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorChipping.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorInflation.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorLayoutSwap.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMorphing.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorPadding.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorReverse.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorShuffling.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorStriding.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorCustomOp.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorEvalTo.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorForcedEval.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorGenerator.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorAssign.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorScan.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorSycl.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorExecutor.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorDevice.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorStorage.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/Tensor.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorFixedSize.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorMap.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorRef.h \
- C:/msys64/mingw64/include/eigen3/unsupported/Eigen/CXX11/src/Tensor/TensorIO.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/ReenableStupidWarnings.h \
- C:/msys64/mingw64/include/opencv4/opencv2/highgui.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/imgcodecs.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/videoio.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/imgproc/imgproc.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/imgproc.hpp \
- C:/msys64/mingw64/include/opencv4/opencv2/imgproc/segmentation.hpp \
- C:/msys64/mingw64/include/vtk-8.2/vtkRenderWindowInteractor.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkRenderingCoreModule.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkObject.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkCommonCoreModule.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkObjectBase.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkIndent.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkSystemIncludes.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkWin32Header.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkConfigure.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkVersionMacros.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkABI.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkIOStream.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkType.h \
- C:/msys64/mingw64/include/vtk-8.2/vtk_kwiml.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkkwiml/abi.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkkwiml/int.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkkwiml/abi.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkWrappingHints.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkOStreamWrapper.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkOStrStreamWrapper.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkAtomicTypes.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkAtomic.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkAtomicTypeConcepts.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkSetGet.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkTimeStamp.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkWeakPointerBase.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkCommand.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkInteractorStyleTrackballCamera.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkInteractionStyleModule.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkInteractorStyle.h \
- C:/msys64/mingw64/include/vtk-8.2/vtkInteractorObserver.h \
- src/gaussian.hpp C:/msys64/mingw64/include/eigen3/Eigen/QR \
+ C:/msys64/mingw64/include/eigen3/Eigen/Eigenvalues \
  C:/msys64/mingw64/include/eigen3/Eigen/Core \
  C:/msys64/mingw64/include/eigen3/Eigen/Cholesky \
  C:/msys64/mingw64/include/eigen3/Eigen/Jacobi \
@@ -276,11 +126,6 @@ build/main.o: src/main.cpp \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Householder/Householder.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Householder/HouseholderSequence.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Householder/BlockHouseholder.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/QR/HouseholderQR.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/QR/FullPivHouseholderQR.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/QR/ColPivHouseholderQR.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
- src/fmin.hpp C:/msys64/mingw64/include/eigen3/Eigen/Eigenvalues \
  C:/msys64/mingw64/include/eigen3/Eigen/LU \
  C:/msys64/mingw64/include/eigen3/Eigen/src/misc/Kernel.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/misc/Image.h \
@@ -291,6 +136,10 @@ build/main.o: src/main.cpp \
  C:/msys64/mingw64/include/eigen3/Eigen/Geometry \
  C:/msys64/mingw64/include/eigen3/Eigen/SVD \
  C:/msys64/mingw64/include/eigen3/Eigen/QR \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/HouseholderQR.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/FullPivHouseholderQR.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/ColPivHouseholderQR.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/misc/RealSvd2x2.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/SVD/UpperBidiagonalization.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/SVD/SVDBase.h \
@@ -325,4 +174,5 @@ build/main.o: src/main.cpp \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h \
- C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+ src/fmin.hpp

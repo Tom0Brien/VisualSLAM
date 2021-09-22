@@ -1,9 +1,9 @@
 build/confidenceRegionDemo.o: src/confidenceRegionDemo.cpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cvdef.h \
+ C:/msys64/mingw64/include/opencv4/opencv2/core/version.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/hal/interface.h \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cv_cpu_dispatch.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/version.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/base.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/opencv_modules.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cvstd.hpp \

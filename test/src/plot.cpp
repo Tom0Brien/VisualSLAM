@@ -19,41 +19,7 @@
 #include <vtkRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 
-SCENARIO("plot: Zero landmarks, S is identity, mu is zero"){
-
-    // std::filesystem::path calibrationFilePath = "data/camera.xml";
-    // CameraParameters param;
-    // importCalibrationData(calibrationFilePath, param);
-
-    // // ------------------------------------------------------------
-    // // Read settings
-    // // ------------------------------------------------------------
-    // Settings s;
-    // std::filesystem::path inputSettingsFile = "data/settings.xml";
-
-    // if (!std::filesystem::exists(inputSettingsFile)){
-    //     std::cout << "No file on path: " << inputSettingsFile << std::endl << std::endl;
-    //     parser.printMessage();
-    //     return -1;
-    // }
-
-    // cv::FileStorage fs(inputSettingsFile.string(), cv::FileStorage::READ); // Read the settings
-    // if (!fs.isOpened())
-    // {
-    //     std::cout << "Could not open the configuration file: \"" << inputSettingsFile << "\"" << std::endl << std::endl;
-    //     parser.printMessage();
-    //     return -1;
-    // }
-    // fs["Settings"] >> s;
-    // fs.release();
-
-    // std::vector<std::filesystem::path> imgFiles;
-    // imgFiles        = getFilesWithExtension(s.input_dir, s.input_ext);
-    
-    // if (imgFiles.size()==0){
-    //     std::cerr << "No files found in path " << s.input_dir << " with extension " << s.input_ext << std::endl;
-    //     assert(0);
-    // }
+SCENARIO("plot: 4 landmarks"){
 
     CameraParameters param;
     std::filesystem::path calibrationFilePath = "data/camera.xml";
@@ -75,7 +41,7 @@ SCENARIO("plot: Zero landmarks, S is identity, mu is zero"){
     mu.block(nx + 12, 0, 6, 1)  << -0.1,  0.1 , 0.5,0,0,0;
     mu.block(nx + 18, 0, 6, 1)  << 0.1,  0.1, 0.5,0,0,0;
 
-    
+
 
     assert(nx_all==S.rows());
 
@@ -123,7 +89,7 @@ SCENARIO("plot: Zero landmarks, S is identity, mu is zero"){
 
         threeDimInteractor->Initialize();
         threeDimInteractor->Start();
-    }   
+    }
 }
 
 

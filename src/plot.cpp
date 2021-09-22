@@ -610,7 +610,6 @@ void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const
     // assert( (nx_all - nx)>0);           // Check that there are features in the scene
     assert( (nx_all - nx)% 6 == 0);     // Check that the dimension for features is correct
     int nr      = (nx_all - nx)/6;      // Number of features
-    std::cout << "nr " << nr << std::endl;
 
     double aspectRatio  = (1.0*param.imageSize.width)/param.imageSize.height;
 
@@ -693,11 +692,11 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     //
     double r,g,b;
     hsv2rgb(330, 1., 1., r, g, b);
-    std::cout << "murCNn " << murCNn << std::endl;
-    std::cout << "murCNn rows" << murCNn.rows() << std::endl;
-    std::cout << "SrCNn" << SrCNn << std::endl;
-    std::cout << "SrCNn rows" << SrCNn.rows() << std::endl;
-    std::cout << "SrCNn cols" << SrCNn.cols() << std::endl;
+    // std::cout << "murCNn " << murCNn << std::endl;
+    // std::cout << "murCNn rows" << murCNn.rows() << std::endl;
+    // std::cout << "SrCNn" << SrCNn << std::endl;
+    // std::cout << "SrCNn rows" << SrCNn.rows() << std::endl;
+    // std::cout << "SrCNn cols" << SrCNn.cols() << std::endl;
     quadricPlot_update(handles.qp_camera, murCNn, SrCNn);
     quadricPlot_getActor(handles.qp_camera)->GetProperty()->SetOpacity(0.1);
     quadricPlot_getActor(handles.qp_camera)->GetProperty()->SetColor(r,g,b);
@@ -794,7 +793,7 @@ void plotFeatureGaussianConfidenceEllipse(cv::Mat & img, const Eigen::VectorXd &
     Eigen::VectorXd rQOi;
     cv::Point point;
     int flag = worldToPixel(murPNn, eta, param, rQOi);
-    std::cout << "flag " << flag << std::endl;
+    // std::cout << "flag " << flag << std::endl;
     if(flag == 0) {
         cv::drawMarker(img, cv::Point(rQOi(0),rQOi(1)),cv::Scalar(color(2),color(1),color(0)),cv::MARKER_CROSS,24,2);
         affineTransform(murPNn, SrPNn, h, muimage, Skimage);

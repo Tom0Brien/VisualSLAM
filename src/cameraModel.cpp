@@ -238,7 +238,7 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     assert(eta.cols() == 1);
 
     int err = worldToPixel(rPNn, eta, param, rQOi);
-    std::cout << "rQOi in w2p: " << rQOi << std::endl;
+    // std::cout << "rQOi in w2p: " << rQOi << std::endl;
     if (err){
         return err;
     }
@@ -252,7 +252,7 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
 int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::VectorXd & eta, const CameraParameters & param, Eigen::VectorXd & rQOi, Eigen::MatrixXd & SR){
 
     int res = operator()(rPNn, eta, param, rQOi);
-    std::cout << "rQOi in w2p: " << rQOi << std::endl;
+    // std::cout << "rQOi in w2p: " << rQOi << std::endl;
     SR      = Eigen::MatrixXd::Zero(rQOi.rows(), rQOi.rows());
     return res;
 }
@@ -379,10 +379,15 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     z       = rPCc(2);
 
     // Check that z is positive
-    assert(z>0);
+    // assert(z>0);
 
-    u       = x/z;
-    v       = y/z;
+    if(z == 0) {
+        u = 0;
+        v = 0;
+    } else {
+        u       = x/z;
+        v       = y/z;
+    }
 
     using std::sqrt;
     using std::pow;

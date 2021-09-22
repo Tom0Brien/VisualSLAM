@@ -101,6 +101,8 @@ void affineTransform(
     Eigen::MatrixXd C;
     h(mux,muy,SR,C);
 
+    // std::cout << "SR" << SR << std::endl;
+
     // TODO: Check outputs of h
     assert(muy.cols() == 1);
     assert(muy.rows() > 0);
@@ -113,13 +115,18 @@ void affineTransform(
 
     // QR Decomp
     Eigen::MatrixXd A(Sxx.rows()+SR.rows(), SR.cols());
-    A << Sxx*C.transpose(),SR;
-
-
+    A.setZero();
+    A << Sxx*C.transpose(), SR;
+    // std::cout << "A" << A << std::endl;
     Eigen::HouseholderQR<Eigen::MatrixXd> qr(A);
     Eigen::MatrixXd R;
+    R.setZero();
     R = qr.matrixQR().triangularView<Eigen::Upper>();
-    Syy = R.topRows(SR.cols());
+    // std::cout << "R" << R << std::endl;
+    Syy.resize(SR.rows(),SR.cols());
+    Syy = R.block(0,0,SR.rows(),SR.cols());
+
+    // std::cout << "Syy" << Syy << std::endl;
 
 }
 
@@ -349,7 +356,12 @@ void timeUpdateContinuous(
     // Noise covariance
     Eigen::VectorXd  f;
     Eigen::MatrixXd  SQ;
+
+    // std::cout << "skm1 " << Skm1 << std::endl;
+
     pm(mukm1, u, param, f, SQ);
+
+    // std::cout << "SQ " << SQ << std::endl;
 
     assert(f.size()>0);
     assert(SQ.size()>0);
@@ -359,13 +371,15 @@ void timeUpdateContinuous(
     Sxdw.topLeftCorner(mukm1.size(), mukm1.size())      = Skm1;
     Sxdw.bottomRightCorner(mukm1.size(), mukm1.size())  = SQ*std::sqrt(timestep);
 
+    // std::cout << "Sxdw " << Sxdw << std::endl;
+
     // RK4SDEHelper::operator()(func, xdw, u, param, dt, f, SR, J)
     // https://www.cplusplus.com/reference/functional/bind/
     RK4SDEHelper<ProcessFunc, ParamStruct> func;
     auto h  = std::bind(func, pm, std::placeholders::_1, u, param, timestep, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4);
 
     affineTransform(muxdw, Sxdw, h, muk, Sk);
-    std::cout << "HERE" <<std::endl;
+    // std::cout << "Sk" << Sk <<std::endl;
 }
 
 

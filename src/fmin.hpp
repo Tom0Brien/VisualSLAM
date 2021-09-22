@@ -44,7 +44,7 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
 
     Scalar Delta = 1e0;     // Initial trust-region radius
 
-    const int maxIterations = 5;
+    const int maxIterations = 5000;
     for (int i = 0; i < maxIterations; ++i)
     {
         // Solve trust-region subproblem

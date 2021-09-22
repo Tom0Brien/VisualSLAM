@@ -1,4 +1,4 @@
-build/model.o: src/model.cpp src/model.h \
+build/model.o: src/model.cpp src/model.hpp \
  C:/msys64/mingw64/include/eigen3/Eigen/Core \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/DisableStupidWarnings.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/Macros.h \
@@ -118,9 +118,9 @@ build/model.o: src/model.cpp src/model.h \
  C:/msys64/mingw64/include/eigen3/Eigen/src/Core/util/ReenableStupidWarnings.h \
  src/imagefeatures.h C:/msys64/mingw64/include/opencv4/opencv2/core.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cvdef.h \
+ C:/msys64/mingw64/include/opencv4/opencv2/core/version.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/hal/interface.h \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cv_cpu_dispatch.h \
- C:/msys64/mingw64/include/opencv4/opencv2/core/version.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/base.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/opencv_modules.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cvstd.hpp \
@@ -150,4 +150,65 @@ build/model.o: src/model.cpp src/model.h \
  C:/msys64/mingw64/include/opencv4/opencv2/flann/defines.h \
  C:/msys64/mingw64/include/opencv4/opencv2/flann/config.h \
  C:/msys64/mingw64/include/opencv4/opencv2/core/affine.hpp \
- src/rotation.hpp src/settings.h
+ src/rotation.hpp src/settings.h src/gaussian.hpp \
+ C:/msys64/mingw64/include/eigen3/Eigen/QR \
+ C:/msys64/mingw64/include/eigen3/Eigen/Core \
+ C:/msys64/mingw64/include/eigen3/Eigen/Cholesky \
+ C:/msys64/mingw64/include/eigen3/Eigen/Jacobi \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Jacobi/Jacobi.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Cholesky/LLT.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Cholesky/LDLT.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/Householder \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Householder/Householder.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Householder/HouseholderSequence.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Householder/BlockHouseholder.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/HouseholderQR.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/FullPivHouseholderQR.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/ColPivHouseholderQR.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/QR/CompleteOrthogonalDecomposition.h \
+ src/fmin.hpp C:/msys64/mingw64/include/eigen3/Eigen/Eigenvalues \
+ C:/msys64/mingw64/include/eigen3/Eigen/LU \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/misc/Kernel.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/misc/Image.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/LU/FullPivLU.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/LU/PartialPivLU.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/LU/Determinant.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/LU/InverseImpl.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/Geometry \
+ C:/msys64/mingw64/include/eigen3/Eigen/SVD \
+ C:/msys64/mingw64/include/eigen3/Eigen/QR \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/misc/RealSvd2x2.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/SVD/UpperBidiagonalization.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/SVD/SVDBase.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/SVD/JacobiSVD.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/SVD/BDCSVD.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/OrthoMethods.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/EulerAngles.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Homogeneous.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/RotationBase.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Rotation2D.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Quaternion.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/AngleAxis.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Transform.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Translation.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Scaling.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Hyperplane.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/ParametrizedLine.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/AlignedBox.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Geometry/Umeyama.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/Tridiagonalization.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/RealSchur.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/EigenSolver.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/RealSchur.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/Tridiagonalization.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/ComplexSchur.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/ComplexSchur.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/RealQZ.h \
+ C:/msys64/mingw64/include/eigen3/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h

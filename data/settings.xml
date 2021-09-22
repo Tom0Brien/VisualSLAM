@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<Settings>
+  <!-- Number of inner corners per row and column.-->
+  <BoardSize_Width> 10</BoardSize_Width>
+  <BoardSize_Height>7</BoardSize_Height>
+
+  <!-- The size of a square in metres-->
+  <Square_Size>0.022</Square_Size>
+
+  <!-- The input image directory -->
+  <Input_Directory>"data/gopro"</Input_Directory>
+  <!-- The input image extension (.jpg, .png, etc.) -->
+  <Input_Extension>".jpg"</Input_Extension>
+
+</Settings>
+</opencv_storage>

@@ -1,5 +1,5 @@
 #include <iostream>
-#include <string>  
+#include <string>
 #include <cstdlib>
 #include <iomanip>
 
@@ -37,7 +37,7 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 //     double k = 0.04;
 //     int thresh = 175;
 //     int max_thresh = 255;
-//     int num_features_detected = 0;   
+//     int num_features_detected = 0;
 //     const char* corners_window = "Corners detected";
 
 //     // Convert to gray
@@ -64,7 +64,7 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 //         }
 //     }
 
-//     std::cout << "Features detected: " << num_features_detected << std::endl;    
+//     std::cout << "Features detected: " << num_features_detected << std::endl;
 //     //Sort struct
 //     std::sort(detected_features.begin(), detected_features.end(), &sortByScore);
 //     for(int i = 0; i < maxNumFeatures; i++){
@@ -80,9 +80,9 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 //     cv::imshow(corners_window, imgout);
 //     int wait = cv::waitKey(0);
 //     return 0;
-    
+
 // }
-// int detectAndDrawShiAndTomasi(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){   
+// int detectAndDrawShiAndTomasi(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){
 //     // Print some stuff
 //     std::cout << "Using Shi & Tomasi corner detector" << std::endl;
 //     std::cout << "Width : " << img.cols << std::endl;
@@ -92,9 +92,9 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 //     int blockSize = 3;
 //     double k = 0.05;
 //     float thresh = 0.35;
-//     int num_features_detected = 0;   
+//     int num_features_detected = 0;
 //     const char* corners_window = "Corners detected";
-    
+
 
 //     // Convert to gray
 //     cv::Mat min_eigen_values     = cv::Mat::zeros(img.size(), CV_32FC1);
@@ -118,7 +118,7 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 //         }
 //     }
 
-//     std::cout << "Features detected: " << num_features_detected << std::endl;    
+//     std::cout << "Features detected: " << num_features_detected << std::endl;
 //     //Sort struct
 //     std::sort(detected_features.begin(), detected_features.end(), &sortByScore);
 //     for(int i = 0; i < maxNumFeatures; i++){
@@ -135,12 +135,12 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 //     cv::imshow(corners_window, imgout);
 //     int wait = cv::waitKey(0);
 //     return 0;
-    
+
 // }
 int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & detected_markers,const CameraParameters & param){
-    std::cout << "Using Marker detector" << std::endl;
-    std::cout << "Width : " << img.cols << std::endl;
-    std::cout << "Height: " << img.rows << std::endl;
+    // std::cout << "Using Marker detector" << std::endl;
+    // std::cout << "Width : " << img.cols << std::endl;
+    // std::cout << "Height: " << img.rows << std::endl;
 
     std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
@@ -151,10 +151,10 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     std::vector<cv::Vec3d> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(markerCorners, 0.166, param.Kc, param.distCoeffs, rvecs, tvecs);
 
-    for(int i = 0; i < markerCorners.size(); i++){
-        std::cout << "tvecs" << tvecs[i] << std::endl;
-        std::cout << "rvecs" << rvecs[i] << std::endl;
-    }
+    // for(int i = 0; i < markerCorners.size(); i++){
+    //     std::cout << "tvecs" << tvecs[i] << std::endl;
+    //     std::cout << "rvecs" << rvecs[i] << std::endl;
+    // }
 
     //Add all markers to a struct
     for(int i = 0; i < markerCorners.size();i++){
@@ -175,11 +175,11 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     std::sort(detected_markers.begin(),detected_markers.end(),&sortById);
 
     //Print out sorted markers
-    for(int i = 0; i < markerCorners.size();i++){
-        std::cout << "ID: " << detected_markers[i].id << "   with corners: " 
-        << detected_markers[i].corners[0] << "," << detected_markers[i].corners[1] << ","
-        << detected_markers[i].corners[2] << ","<< detected_markers[i].corners[3] << std::endl;
-    }
+    // for(int i = 0; i < markerCorners.size();i++){
+    //     std::cout << "ID: " << detected_markers[i].id << "   with corners: "
+    //     << detected_markers[i].corners[0] << "," << detected_markers[i].corners[1] << ","
+    //     << detected_markers[i].corners[2] << ","<< detected_markers[i].corners[3] << std::endl;
+    // }
 
     //Show markers detected
     // const char* detected_markers = ;
@@ -195,7 +195,7 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     return 0;
 }
 int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){
-    
+
     std::cout << "Using ORB feature detector" << std::endl;
     std::cout << "Width : " << img.cols << std::endl;
     std::cout << "Height: " << img.rows << std::endl;
@@ -211,7 +211,7 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){
         2,                      // WTA_K
         cv::ORB::HARRIS_SCORE,  // scoreType
         31,                     // patchSize
-        20                      // fastThreshold 
+        20                      // fastThreshold
     );
 
     //Create array to store keypoints
@@ -230,7 +230,7 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){
     std::cout << "Descriptor Width:" << descriptors.cols << std::endl;
     std::cout << "Descriptor Height:" << descriptors.rows << std::endl;
     for(int i = 0;i < descriptors.rows;i++){
-        std::cout << "Keypoint " << i << " description:" << descriptors.row(i) << std::endl; 
+        std::cout << "Keypoint " << i << " description:" << descriptors.row(i) << std::endl;
     }
 
     //Draw keypoints on output image
@@ -240,6 +240,6 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){
     cv::imshow(orb_features,imgout);
     int wait = cv::waitKey(0);
     return 0;
-    
+
 }
 

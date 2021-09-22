@@ -65,24 +65,25 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     // Initialise filter
     SEKF.fill(0);
-    SEKF.diagonal() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
+    SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25;
 
-    muEKF <<     0, // x
-                 0, // y
-                 0, // z
-                 0, // Psi
-                 0, // Theta
-                 0, // Phi
-                 0, // x dot
+    muEKF <<     0, // x dot
                  0, // y dot
                  0, // z dot
                  0, // Psi dot
                  0, // Theta dot
-                 0; // Phi dot
+                 0, // Phi dot
+                 0, // x
+                 0, // y
+                 0, // z
+                 0, // Psi
+                 0, // Theta
+                 0; // Phi
+
 
     std::cout << "Initial state estimate" << std::endl;
-    std::cout << "muEKF = \n" << muEKF << std::endl;
-    std::cout << "SEKF = \n" << SEKF << std::endl;
+    // std::cout << "muEKF = \n" << muEKF << std::endl;
+    // std::cout << "SEKF = \n" << SEKF << std::endl;
 
     // Initialize plot states
     PlotHandles tmpHandles;
@@ -91,7 +92,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     cv::Mat view;
     std::cout << "Lets slam lads" << std::endl;
-    int count = 0;
     std::vector<int> marker_ids;
 
     Eigen::Matrix<double, Eigen::Dynamic, 1> Thetacm;
@@ -104,12 +104,21 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
 
     Eigen::VectorXd u;
-    double timestep = 0.01;
+    double fps = cap.get(cv::CAP_PROP_FPS);
+    double timestep = 1/fps;
+    std::cout << "fps : " << fps << std::endl;
+    std::cout << "timestep : " << timestep << std::endl;
+    int count = 0;
+
     while(cap.isOpened()){
         cap >> view;
         if(view.empty()){
             break;
         }
+
+        count++;
+
+
         cv::Mat imgout;
         Eigen::VectorXd xk, yk, muf, mup;
         Eigen::MatrixXd Sf, Sp;
@@ -119,22 +128,24 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // Calculate prediction density
         timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
 
+
+
         // ****** 2. Identify landmarks with matching features ******/////
         slamparam.landmarks_seen.clear();
-        std::vector<Marker> detected_markers;
         int n_measurements;
+        std::vector<Marker> detected_markers;
         detectAndDrawArUco(view, imgout, detected_markers, param);
         // Check all detected markers, if there is a new marker update the state else if max ID not met add ID to list and initialize a new landmark
         for(int i = 0; i < detected_markers.size(); i++){
-            std::cout << "detected markers size" << detected_markers.size() << std::endl;
-            std::cout << "detected marker we are checking: " << detected_markers[i].id << std::endl;
+            // std::cout << "detected markers size" << detected_markers.size() << std::endl;
+            // std::cout << "detected marker we are checking: " << detected_markers[i].id << std::endl;
             //Search list of current markers
             std::vector<int>::iterator it = std::find(marker_ids.begin(), marker_ids.end(), detected_markers[i].id);
-            std::cout << it - marker_ids.begin() <<std::endl;
+            // std::cout << it - marker_ids.begin() <<std::endl;
             //If marker was found in our list, update the state
             if(it != marker_ids.end()) {
                 int j = it - marker_ids.begin();
-                std::cout << "Marker ID: " << detected_markers[i].id << " found, update state, landmark (j) :" << j << std::endl;
+                // std::cout << "Marker ID: " << detected_markers[i].id << " found, update state, landmark (j) :" << j << std::endl;
 
                 // Add pixel location of corners to measurement yk
                 n_measurements = yk.rows();
@@ -144,11 +155,11 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     rJcNn << detected_markers[i].corners[c].x, detected_markers[i].corners[c].y;
                     yk.block(n_measurements+c*2,0,2,1) = rJcNn;
                 }
-                std::cout << "yk: " << yk << std::endl;
+                // std::cout << "yk: " << yk << std::endl;
                 // Add index j to landmark seen vector
                 slamparam.landmarks_seen.push_back(j);
             } else {
-                std::cout << "Marker ID: " << detected_markers[i].id << " not found in list, add new landmark" << std::endl;
+                // std::cout << "Marker ID: " << detected_markers[i].id << " not found in list, add new landmark" << std::endl;
 
                 // Add new landmark to now seen list
                 marker_ids.push_back(detected_markers[i].id);
@@ -157,25 +168,23 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 int n_states = muEKF.rows();
                 SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                 Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
-                double kappa = 1e6;
+                double kappa = 0.01;
                 for(int k = 0; k < 6; k++){
                     SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                     Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
                 }
                 muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                 mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-
-
                 // Add initial good guess
-                // rot2rpy(detected_markers[i].Rcm,Thetacm);
-                // Thetanc = mup.block(9,0,3,1);
-                // rpy2rot(Thetanc, Rnc);
-                // Rnm = Rnc*detected_markers[i].Rcm;
-                // rot2rpy(Rnm,Thetanm);
-                // rMNn = mup.block(6,0,3,1) + Rnc*detected_markers[i].rMCc;
-                // mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
+                rot2rpy(detected_markers[i].Rcm,Thetacm);
+                Thetanc = mup.block(9,0,3,1);
+                rpy2rot(Thetanc, Rnc);
+                Rnm = Rnc*detected_markers[i].Rcm;
+                rot2rpy(Rnm,Thetanm);
+                rMNn = mup.block(6,0,3,1) + Rnc*detected_markers[i].rMCc;
+                mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
 
-                // Add to measurement to vector yk
+                // Add marker corner measurements to vector yk
                 n_measurements = yk.rows();
                 yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+8,1));
                 for(int c = 0; c < 4; c++) {
@@ -185,20 +194,44 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 }
                 // Add index j to landmark seen vector
                 slamparam.landmarks_seen.push_back((n_states-nx)/6);
-                std::cout << "yk: " << yk << std::endl;
+                std::cout << " NEW LANDMARK : " << (n_states-nx)/6 << std::endl;
+                // std::cout << "yk: " << yk << std::endl;
 
-                initPlotStates(muEKF, SEKF, param, tmpHandles);
+                initPlotStates(mup, Sp, param, tmpHandles);
             }
         }
 
-        std::cout << "landmarks seen size : " << slamparam.landmarks_seen.size() << std::endl;
-        updatePlotStates(imgout, muEKF, SEKF, param, tmpHandles);
+        //*********** 6. Perform measurement update
+        // Calculate filtered density
+        measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
+        muEKF               = muf;
+        SEKF                = Sf;
 
+        // std::cout << "muEKF" << muEKF << std::endl;
+        // std::cout << "SEKF" << SEKF << std::endl;
         // -------------------------
         // Attach interactor for playing with the 3d interface
         // -------------------------
-        if(interactive == 2) {
+        if (interactive != 2 && count < 100){
+            std::cout << "muEKF : " << muEKF << std::endl;
+            // updatePlotStates(view, muEKF, SEKF, param, tmpHandles);
+            // std::filesystem::path  outputPath;
+            // outputPath               = outdir / imgFiles.at(k);
+            // WriteImage(outputPath.string(), handles.renderWindow);
+        }
+        else
+        {
+            PlotHandles tmpHandles;
+            initPlotStates(muEKF, SEKF, param, tmpHandles);
+            updatePlotStates(view, muEKF, SEKF, param, tmpHandles);
 
+            // std::filesystem::path  outputPath;
+            // outputPath               = outdir / imgFiles.at(k);
+            // WriteImage(outputPath.string(), tmpHandles.renderWindow);
+
+            // -------------------------
+            // Attach interactor for playing with the 3d interface
+            // -------------------------
             vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
             vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
 
@@ -208,24 +241,13 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
             threeDimInteractor->Initialize();
             threeDimInteractor->Start();
-            int wait = cv::waitKey(1);
         }
-        //*********** 3. Remove failed landmarks from map (consecutive failures to match) **************//
 
-        //*********** 4. Identify surplus features that do not correspond to landmarks in the map **************//
+        // std::cout << "muEKF : " << muEKF  << std::endl;
+        // std::cout << "SEKF : " << SEKF  << std::endl;
+        // std::cout << "muEKF.rows(): " << muEKF.rows() << std::endl;
+        // std::cout << "SEKF.rows(): " << SEKF.rows() << std::endl;
 
-        //*********** 5. Initialise up to Nmax – N new landmarks from best surplus features **************//
-
-        //*********** 6. Perform measurement update
-        // Calculate filtered density
-
-        std::cout << "mup : " << mup << std::endl;
-        std::cout << "Sp : " << Sp << std::endl;
-        std::cout << "Sp.rows() : " << Sp.rows() << std::endl;
-        // assert(0);
-        measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
-        muEKF               = muf;
-        SEKF                = Sf;
 
         if (muEKF.hasNaN()){
             std::cout << "NaNs encountered in muEKF. muEKF = \n" << muEKF << std::endl;
@@ -235,11 +257,5 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             std::cout << "NaNs encountered in SEKF. S = \n" << SEKF << std::endl;
             return;
         }
-
-        std::cout << "muEKF: " << muEKF << std::endl;
-        std::cout << "SEKF: " << SEKF << std::endl;
-        std::cout << "muEKF.rows(): " << muEKF.rows() << std::endl;
-        std::cout << "SEKF.rows(): " << SEKF.rows() << std::endl;
-        // assert(0);
     }
 }

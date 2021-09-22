@@ -183,9 +183,13 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     // Check that z is positive
     // assert(z>0);
-
-    u       = x/z;
-    v       = y/z;
+    if(z == 0) {
+        u = 0;
+        v = 0;
+    } else {
+        u       = x/z;
+        v       = y/z;
+    }
 
     using std::sqrt;
 
@@ -203,7 +207,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
     up      = c*u + p1*2*u*v + p2*(r2 + 2*u2) + s1*r2 + s2*r4;
     vp      = c*v + p2*2*u*v + p1*(r2 + 2*v2) + s3*r2 + s4*r4;
     rQOi    << fx*up + cx, fy*vp + cy;
-    std::cout << "rQOi in w2p: " << rQOi << std::endl;
+    // std::cout << "rQOi in w2p: " << rQOi << std::endl;
 
     bool isInWidth  = 0 <= rQOi(0) && rQOi(0) <= param.imageSize.width-1;
     bool isInHeight = 0 <= rQOi(1) && rQOi(1) <= param.imageSize.height-1;

@@ -6,6 +6,8 @@
 
 #include "imagefeatures.h"
 #include "cameraModel.hpp"
+#include "rotation.hpp"
+#include "gaussian.hpp"
 
 struct SlamParameters
 {
@@ -13,11 +15,14 @@ struct SlamParameters
     std::vector<int> landmarks_seen;
 };
 
+
+
 struct SlamProcessModel
 {
+    // double operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f);
     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f);
     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ);
-    void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ, Eigen::MatrixXd & dfdx);
+    void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ, Eigen::MatrixXd &dfdx);
 };
 
 // struct SlamMeasurementModel

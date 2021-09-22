@@ -2,6 +2,7 @@ build/settings.o: src/settings.cpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/persistence.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/types.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cvdef.h \
+ C:/msys64/mingw64/include/opencv4/opencv2/core/version.hpp \
  C:/msys64/mingw64/include/opencv4/opencv2/core/hal/interface.h \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cv_cpu_dispatch.h \
  C:/msys64/mingw64/include/opencv4/opencv2/core/cvstd.hpp \
