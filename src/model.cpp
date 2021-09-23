@@ -10,6 +10,9 @@
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
+// #include <autodiff/forward.hpp>
+// #include <autodiff/forward/eigen.hpp>
+
 using std::sqrt;
 
 void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f)
@@ -52,10 +55,13 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
 void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ)
 {
     operator()(x,u,param,f);
-    double tune = 0.1;
+    double tune = 0.05;
     SQ.resize(x.rows(),x.rows());
     SQ.setIdentity();
-    SQ = tune*SQ;
+    double camera_tune = 1;
+    double landmark_tune = 0;
+    SQ.block(0,0,6,6) = camera_tune*Eigen::MatrixXd::Identity(6,6);
+    SQ.block(6,6,x.rows()-6,x.rows()-6) = landmark_tune*Eigen::MatrixXd::Identity(x.rows()-6,x.rows()-6);
 }
 
 
@@ -152,6 +158,7 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
 {
 
     // y are corner pixels [nj*2*4, 1]
+    // std::cout << "y : " << y << std::endl;
     // Evaluate log N(y;h(x),R)
     int nx = 12;
 
@@ -162,14 +169,18 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
     rJcJj.block(0,1,3,1) <<  length/2,  length/2, 0;
     rJcJj.block(0,2,3,1) <<  length/2, -length/2, 0;
     rJcJj.block(0,3,3,1) << -length/2, -length/2, 0;
+    // std::cout << "local marker corners : " << rJcJj << std::endl;
 
     // TODO: upper Cholesky factor of measurement covariance (pixel)
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR(2,2);
-    double tune = 10;
+    double tune = 5;
     SR = tune*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    // SR(0,0) = 1920;
+    // SR(1,1) = 1080;
 
     Scalar cost = 0;
     //For each landmark seen
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> eta = x.block(6,0,6,1);
     for(int j = 0; j < param.landmarks_seen.size(); j++) {
         // For each corner of the landmark
         // *** State Predicted Landmark Location *** //
@@ -183,13 +194,10 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
         for(int c = 0; c < 4; c++) {
             // Calculate the corner coords from our state into world space and convert to pixel to compare against the measurements
             // *** State Predicted Corner Pixel *** //
-            Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn = Rnj*rJcJj.block(0,c,3,1) + rJNn;
-            // std::cout << " rJcNn : " << rJcNn << std::endl;
+            Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn = Rnj*rJcJj.block(0,c,3,1)+ rJNn;
             // std::cout << "State corner of marker location : " << rJcNn << std::endl;
-            Eigen::Matrix<Scalar,Eigen::Dynamic,1> eta = x.block(6,0,6,1);
             // std::cout << " eta : " << eta << std::endl;
             Eigen::Matrix<Scalar,Eigen::Dynamic,1> rQOi;
-            rQOi.setZero();
             worldToPixel(rJcNn,eta,param.camera_param,rQOi);
             // std::cout << " rQOi : " << rQOi << std::endl;
 
@@ -201,10 +209,10 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
             // std::cout << "State Predicted Corner Pixel : " << rQOi << std::endl;
 
             // Sum up log gausian for each measurement
-            cost += logGaussian(rQOj, rQOi, SR);
-            // std::cout << " cost : " << cost << std::endl;
+            cost += logGaussian(rQOj,rQOi, SR);
         }
     }
+  //std::cout << " cost : " << cost << std::endl;
 
     return cost;
 }

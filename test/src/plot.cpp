@@ -58,38 +58,38 @@ SCENARIO("plot: 4 landmarks"){
         assert (isCreated);
     }
 
-    cv::Mat view;
-    view = cv::imread("data/1023.jpg");
+    // cv::Mat view;
+    // view = cv::imread("data/1023.jpg");
 
-    if (!doInteractor){
-        updatePlotStates(view, mu, S, param, handles);
-        // std::filesystem::path  outputPath;
-        // outputPath               = outdir / imgFiles.at(k);
-        // WriteImage(outputPath.string(), handles.renderWindow);
-    }
-    else
-    {
-        PlotHandles tmpHandles;
-        initPlotStates(mu, S, param, tmpHandles);
-        updatePlotStates(view, mu, S, param, tmpHandles);
+    // if (!doInteractor){
+    //     updatePlotStates(view, mu, S, param, handles);
+    //     // std::filesystem::path  outputPath;
+    //     // outputPath               = outdir / imgFiles.at(k);
+    //     // WriteImage(outputPath.string(), handles.renderWindow);
+    // }
+    // else
+    // {
+    //     PlotHandles tmpHandles;
+    //     initPlotStates(mu, S, param, tmpHandles);
+    //     updatePlotStates(view, mu, S, param, tmpHandles);
 
-        // std::filesystem::path  outputPath;
-        // outputPath               = outdir / imgFiles.at(k);
-        // WriteImage(outputPath.string(), tmpHandles.renderWindow);
+    //     // std::filesystem::path  outputPath;
+    //     // outputPath               = outdir / imgFiles.at(k);
+    //     // WriteImage(outputPath.string(), tmpHandles.renderWindow);
 
-        // -------------------------
-        // Attach interactor for playing with the 3d interface
-        // -------------------------
-        vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
-        vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+    //     // -------------------------
+    //     // Attach interactor for playing with the 3d interface
+    //     // -------------------------
+    //     vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+    //     vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
 
 
-        threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
-        threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
+    //     threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+    //     threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
 
-        threeDimInteractor->Initialize();
-        threeDimInteractor->Start();
-    }
+    //     threeDimInteractor->Initialize();
+    //     threeDimInteractor->Start();
+    // }
 }
 
 

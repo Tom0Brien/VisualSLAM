@@ -49,7 +49,7 @@ int trs(const Eigen::MatrixXd &Q, const Eigen::VectorXd &v, const Eigen::VectorX
     typedef Eigen::MatrixXd Matrix;
 
     const Scalar sqrteps = std::sqrt(std::numeric_limits<Scalar>::epsilon());
-    const int maxIterations = 20;
+    const int maxIterations = 5000;
 
     Scalar l1 = v(1); // Leftmost eigenvalue since they are stored in ascending order
     Vector a = Q.transpose()*g;

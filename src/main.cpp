@@ -63,7 +63,7 @@ int main(int argc, char* argv [])
     // Read settings
     // ------------------------------------------------------------
     Settings s;
-    std::filesystem::path inputSettingsFile = "data/settings.xml";
+    std::filesystem::path inputSettingsFile = "../data/settings.xml";
 
     if (!std::filesystem::exists(inputSettingsFile)){
         std::cout << "No file on path: " << inputSettingsFile << std::endl << std::endl;
@@ -83,7 +83,7 @@ int main(int argc, char* argv [])
 
     std::filesystem::path appPath = parser.getPathToApplication();
     std::filesystem::path dataFile = appPath / ".." / "data" / "camera.xml";
-    std::filesystem::path calibrationFilePath = "data/camera.xml";
+    std::filesystem::path calibrationFilePath = "../data/camera.xml";
     CameraParameters param;
     if (hasCalibrate)
     {
