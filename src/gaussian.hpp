@@ -476,7 +476,7 @@ void measurementUpdateIEKF(
     Eigen::MatrixXd Q(mux.size(),mux.size());
     Eigen::VectorXd v(mux.size());
     Eigen::VectorXd g(mux.size());
-    constexpr int verbosity = 3; // 0:none, 1:dots, 2:summary, 3:iter
+    constexpr int verbosity = 1; // 0:none, 1:dots, 2:summary, 3:iter
     muxGy = mux; // Start optimisation at prior mean
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
 

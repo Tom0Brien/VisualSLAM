@@ -64,7 +64,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     // Initialise filter
     SEKF.fill(0);
-    SEKF.diagonal() << 10, 10, 10, 0.5, 0.5, 0.5, 0.01, 0.01, 0.01, 0.001, 0.001, 0.001;
+    SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,0.25,0.25,0.25;
 
     muEKF <<     0, // x dot
                  0, // y dot
@@ -75,8 +75,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                  0, // x
                  0, // y
                  -1.8, // z
-                 -1.571, // Psi
-                 3.14, // Theta
+                 -3.14159265359/2, // Psi
+                 3.14159265359, // Theta
                  0; // Phi
 
     //Initialize the plot states
@@ -132,14 +132,14 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
         // ****** 1. Perform time update to current frame time ******/////
         // Calculate prediction density
-        std::cout << " Time update " << std::endl;
+        // std::cout << " Time update " << std::endl;
         timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
 
         // ****** 2. Identify landmarks with matching features ******/////
         slamparam.landmarks_seen.clear();
         int n_measurements;
         std::vector<Marker> detected_markers;
-        std::cout << " Detect markers " << std::endl;
+        // std::cout << " Detect markers " << std::endl;
         detectAndDrawArUco(view, imgout, detected_markers, param);
         // Check all detected markers, if there is a new marker update the state else if max ID not met add ID to list and initialize a new landmark
         for(int i = 0; i < detected_markers.size(); i++){
@@ -170,7 +170,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                 muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                 mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                double kappa = 100;
+                double kappa = 0.01;
                 for(int k = 0; k < 6; k++){
                     SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                     Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
@@ -196,52 +196,54 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // Add index j to landmark seen vector
                 slamparam.landmarks_seen.push_back((n_states-nx)/6);
                 std::cout << " NEW LANDMARK : " << (n_states-nx)/6 << std::endl;
-                std::cout << "yk: " << yk << std::endl;
-                std::cout << "mup: " << mup << std::endl;
+                // std::cout << "yk: " << yk << std::endl;
+                // std::cout << "mup: " << mup << std::endl;
 
             }
         }
 
         assert(yk.size() % 8 == 0);
-        std::cout << "frame no. : " << count << std::endl;
-        for(int k = 0; k < slamparam.landmarks_seen.size(); k++) {
-            std::cout << "landmarks seen : " <<  slamparam.landmarks_seen[k] << std::endl;
-        }
+        // for(int k = 0; k < slamparam.landmarks_seen.size(); k++) {
+        //     std::cout << "landmarks seen : " <<  slamparam.landmarks_seen[k] << std::endl;
+        // }
         // std::cout << "yk: " << yk << std::endl;
-        std::cout << "yk.rows(): " << yk.rows() << std::endl;
+        // std::cout << "yk.rows(): " << yk.rows() << std::endl;
+
 
         //*********** 6. Perform measurement update
         // Calculate filtered density
-        std::cout << " Measurement update " << std::endl;
-        if(count > 26) {
-            slamparam.debug = 1;
-            std::cout << "mup " << mup << std::endl;
-            std::cout << "mup.rows() " << mup.rows() << std::endl;
-            vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
-            vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
-            threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
-            threeDimInteractor->SetRenderWindow(handles.renderWindow);
-            threeDimInteractor->Initialize();
-            threeDimInteractor->Start();
-            initPlotStates(muPlot, SPlot, param, handles);
-        }
-        if(count != 28) {
-            measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
-            muEKF               = muf;
-            SEKF                = Sf;
-        }
+        // std::cout << " Measurement update " << std::endl;
+        // if(count > 26) {
+        //     slamparam.debug = 1;
+        //     std::cout << "mup " << mup << std::endl;
+        //     std::cout << "mup.rows() " << mup.rows() << std::endl;
+        //     vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+        //     vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+        //     threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+        //     threeDimInteractor->SetRenderWindow(handles.renderWindow);
+        //     threeDimInteractor->Initialize();
+        //     threeDimInteractor->Start();
+        //     initPlotStates(muPlot, SPlot, param, handles);
+        // }
+
+        measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
+        muEKF               = muf;
+        SEKF                = Sf;
+
 
         //**********  Plotting **********//
 
         muPlot.segment(0,muEKF.rows()) = muEKF;
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
-        if (interactive != 2 && count % 25 != 0){
-            updatePlotStates(view, muPlot, SPlot, param, handles);
+        if (interactive != 2 && count % 75 != 0){
+            // updatePlotStates(view, muPlot, SPlot, param, handles);
 
         }
         else
         {
+            std::cout << "frame no. : " << count << std::endl;
             updatePlotStates(view, muEKF, SEKF, param, handles);
+            std::cout << "world postion: " << muEKF.segment(6,3) << std::endl;
             // -------------------------
             // Attach interactor for playing with the 3d interface
             // -------------------------

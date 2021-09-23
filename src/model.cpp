@@ -58,8 +58,8 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
     operator()(x,u,param,f);
     SQ.resize(x.rows(),x.rows());
     SQ.setZero();
-    double position_tune = 1;
-    double orientation_tune = 1;
+    double position_tune = 0.1;
+    double orientation_tune = 0.1;
     double landmark_tune = 0;
     SQ.block(0,0,3,3) = position_tune*Eigen::MatrixXd::Identity(3,3);
     SQ.block(3,3,3,3) = orientation_tune*Eigen::MatrixXd::Identity(3,3);
@@ -198,7 +198,7 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
             // *** State Predicted Corner Pixel *** //
             rJcNn = Rnj*rJcJj.block(0,c,3,1) + rJNn;
             int flag = worldToPixel(rJcNn,eta,param.camera_param,state_pixel);
-            assert(flag == 0);
+            // assert(flag == 0);
 
             // *** Measurement Corner Pixel ***//
             measurement_pixel = y.segment(8*l + 2*c,2);
