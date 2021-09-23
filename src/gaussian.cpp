@@ -80,11 +80,6 @@ void gaussianConfidenceQuadric3Sigma(const Eigen::VectorXd &mu, const Eigen::Mat
     assert(mu.rows() == nx);
     assert(S.rows() == nx);
     assert(S.cols() == nx);
-
-    // std::cout << "mu " << mu << std::endl;
-    // std::cout << "S " << S << std::endl;
-    // std::cout << "Q " << Q << std::endl;
-
     Eigen::MatrixXd z =   S.triangularView<Eigen::Upper>().transpose().solve(Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>::Identity(S.rows(),S.rows()))*mu;
     Eigen::MatrixXd topLeft = S.triangularView<Eigen::Upper>().solve( S.triangularView<Eigen::Upper>().transpose().solve(
                 Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>::Identity(S.rows(),S.rows()))
@@ -95,5 +90,4 @@ void gaussianConfidenceQuadric3Sigma(const Eigen::VectorXd &mu, const Eigen::Mat
     double bottomRight = zTz(0) - 14.1564;
     Q.resize(4,4);
     Q << topLeft,topRight,bottomLeft,bottomRight;
-
 }

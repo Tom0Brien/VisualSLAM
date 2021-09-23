@@ -65,7 +65,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     // Initialise filter
     SEKF.fill(0);
-    SEKF.diagonal() << 1, 1, 1, 1, 1, 1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
+    SEKF.diagonal() << 1, 1, 1, 0.5, 0.5, 0.5, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01;
 
     muEKF <<     0, // x dot
                  0, // y dot
@@ -75,9 +75,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                  0, // Phi dot
                  0, // x
                  0, // y
-                 0, // z
-                 0, // Psi
-                 0, // Theta
+                 -1.8, // z
+                 -1.571, // Psi
+                 3.14, // Theta
                  0; // Phi
 
 
@@ -129,6 +129,16 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         std::cout << " Time update " << std::endl;
         timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
 
+        if (mup.hasNaN()){
+            std::cout << "NaNs encountered in mup. mup = \n" << mup << std::endl;
+            return;
+        }
+
+        if (mup.hasNaN()){
+            std::cout << "NaNs encountered in Sp. Sp = \n" << Sp << std::endl;
+            return;
+        }
+
 
 
         // ****** 2. Identify landmarks with matching features ******/////
@@ -172,18 +182,20 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                 muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                 mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                double kappa = 2;
+                double kappa = 1000;
                 for(int k = 0; k < 6; k++){
                     SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                     Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
                 }
 
                 //Initialize
-                mup(mup.rows()-4) = mup(8) + 4;
-                muEKF(muEKF.rows()-4) = mup(8) + 4;
+                mup(mup.rows()-4) = -2;
+                muEKF(muEKF.rows()-4) = -2;
+                mup(mup.rows()-5) = 3;
+                muEKF(muEKF.rows()-5) = 3;
 
-                // std::cout << "mup" << mup << std::endl;
-                // std::cout << "muEKF" << muEKF << std::endl;
+                std::cout << "mup" << mup << std::endl;
+                std::cout << "muEKF" << muEKF << std::endl;
 
                 // PlotHandles tmpHandles;
                 // initPlotStates(muEKF, SEKF, param, tmpHandles);
@@ -196,23 +208,15 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // -------------------------
                 // Attach interactor for playing with the 3d interface
                 // -------------------------
-                // vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
-                // vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
 
-
-                // threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
-                // threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
-
-                // threeDimInteractor->Initialize();
-                // threeDimInteractor->Start();
                 // Add initial good guess
-                rot2rpy(detected_markers[i].Rcm,Thetacm);
-                Thetanc = mup.block(9,0,3,1);
-                rpy2rot(Thetanc, Rnc);
-                Rnm = Rnc*detected_markers[i].Rcm;
-                rot2rpy(Rnm,Thetanm);
-                rMNn = mup.block(6,0,3,1) + Rnc*detected_markers[i].rMCc;
-                mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
+                // rot2rpy(detected_markers[i].Rcm,Thetacm);
+                // Thetanc = mup.block(9,0,3,1);
+                // rpy2rot(Thetanc, Rnc);
+                // Rnm = Rnc*detected_markers[i].Rcm;
+                // rot2rpy(Rnm,Thetanm);
+                // rMNn = mup.block(6,0,3,1) + Rnc*detected_markers[i].rMCc;
+                // mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
 
                 // Add marker corner measurements to vector yk
                 n_measurements = yk.rows();
@@ -225,19 +229,24 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // Add index j to landmark seen vector
                 slamparam.landmarks_seen.push_back((n_states-nx)/6);
                 std::cout << " NEW LANDMARK : " << (n_states-nx)/6 << std::endl;
-                // std::cout << "yk: " << yk << std::endl;
+                std::cout << "yk: " << yk << std::endl;
 
                 initPlotStates(mup, Sp, param, tmpHandles);
+                updatePlotStates(view, mup, Sp, param, tmpHandles);
             }
         }
 
         //*********** 6. Perform measurement update
         // // Calculate filtered density
-        // std::cout << " Measurement update " << std::endl;
-        // std::cout << "mup" << mup << std::endl;
-        // std::cout << "Sp" << Sp << std::endl;
-        // std::cout << "yk" << yk << std::endl;
-        // std::cout << "slamparam.landmarks seen size" << slamparam.landmarks_seen.size() << std::endl;
+        std::cout << " Measurement update " << std::endl;
+        std::cout << "mup" << mup << std::endl;
+        std::cout << "Sp" << Sp << std::endl;
+        std::cout << "mup.rows()" << mup.rows() << std::endl;
+        std::cout << "Sp.rows()" << Sp.rows() << std::endl;
+        std::cout << "yk" << yk << std::endl;
+        std::cout << "yk.rows()" << yk.rows() << std::endl;
+        std::cout << "slamparam.landmarks seen size" << slamparam.landmarks_seen.size() << std::endl;
+
         measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
         muEKF               = muf;
         SEKF                = Sf;
@@ -256,6 +265,15 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         if (interactive != 2 && count % 25 != 0){
             // std::cout << "muEKF : " << muEKF << std::endl;
             updatePlotStates(view, muEKF, SEKF, param, tmpHandles);
+            vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+            vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+
+
+            threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+            threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
+
+            threeDimInteractor->Initialize();
+            threeDimInteractor->Start();
             // std::filesystem::path  outputPath;
             // outputPath               = outdir / imgFiles.at(k);
             // WriteImage(outputPath.string(), handles.renderWindow);

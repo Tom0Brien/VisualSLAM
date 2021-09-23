@@ -411,11 +411,11 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
 
     Eigen::MatrixXd dudr;
     dudr.resize(1,3);
-    dudr << 1/z, 0, -x/z*z;
+    dudr << 1/z, 0, -x/(z*z);
 
     Eigen::MatrixXd dvdr;
     dvdr.resize(1,3);
-    dvdr << 0, 1/z, -y/z*z;
+    dvdr << 0, 1/z, -y/(z*z);
 
     double drdu = pow(u2 + v2,-0.5)*u;
     double drdv = pow(u2 + v2,-0.5)*v;

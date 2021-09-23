@@ -31,7 +31,7 @@ CMAKE_AR:FILEPATH=C:/msys64/mingw64/bin/ar.exe
 CMAKE_BUILD_TYPE:STRING=
 
 //CXX compiler
-CMAKE_CXX_COMPILER:FILEPATH=C:/msys64/mingw64/bin/c++.exe
+CMAKE_CXX_COMPILER:STRING=C:/msys64/mingw64/bin/c++.exe
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -60,7 +60,7 @@ CMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O2 -g -DNDEBUG
 CMAKE_CXX_STANDARD_LIBRARIES:STRING=-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
 
 //C compiler
-CMAKE_C_COMPILER:FILEPATH=C:/msys64/mingw64/bin/cc.exe
+CMAKE_C_COMPILER:STRING=C:/msys64/mingw64/bin/cc.exe
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -260,11 +260,17 @@ Qt5Sql_DIR:PATH=C:/msys64/mingw64/lib/cmake/Qt5Sql
 //The directory containing a CMake configuration file for Qt5Widgets.
 Qt5Widgets_DIR:PATH=C:/msys64/mingw64/lib/cmake/Qt5Widgets
 
+//The directory containing a CMake configuration file for Qt5.
+Qt5_DIR:PATH=Qt5_DIR-NOTFOUND
+
 //The directory containing a CMake configuration file for VTK.
 VTK_DIR:PATH=C:/msys64/mingw64/lib/cmake/vtk-8.2
 
 //Value Computed by CMake
 a1_BINARY_DIR:STATIC=C:/msys64/home/Tom/VisualSLAM/build
+
+//Value Computed by CMake
+a1_IS_TOP_LEVEL:STATIC=ON
 
 //Value Computed by CMake
 a1_SOURCE_DIR:STATIC=C:/msys64/home/Tom/VisualSLAM
@@ -290,9 +296,9 @@ CMAKE_CACHEFILE_DIR:INTERNAL=c:/msys64/home/Tom/VisualSLAM/build
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 //Minor version of cmake used to create the current loaded cache
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=20
+CMAKE_CACHE_MINOR_VERSION:INTERNAL=21
 //Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=1
+CMAKE_CACHE_PATCH_VERSION:INTERNAL=3
 //Path to CMake executable.
 CMAKE_COMMAND:INTERNAL=C:/msys64/mingw64/bin/cmake.exe
 //Path to cpack program executable.
@@ -406,7 +412,7 @@ CMAKE_RC_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_READELF
 CMAKE_READELF-ADVANCED:INTERNAL=1
 //Path to CMake installation.
-CMAKE_ROOT:INTERNAL=C:/msys64/mingw64/share/cmake-3.20
+CMAKE_ROOT:INTERNAL=C:/msys64/mingw64/share/cmake-3.21
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS
 CMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
@@ -436,9 +442,9 @@ CMAKE_STRIP-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding Boost
-FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/msys64/mingw64/include][c ][v1.75.0(1.74)]
+FIND_PACKAGE_MESSAGE_DETAILS_Boost:INTERNAL=[C:/msys64/mingw64/include][c ][v1.77.0(1.74)]
 //Details about finding OpenCV
-FIND_PACKAGE_MESSAGE_DETAILS_OpenCV:INTERNAL=[C:/msys64/mingw64][v4.5.1(4.5)]
+FIND_PACKAGE_MESSAGE_DETAILS_OpenCV:INTERNAL=[C:/msys64/mingw64][v4.5.2(4.5)]
 //Components requested for this build tree.
 _Boost_COMPONENTS_SEARCHED:INTERNAL=
 //Last used Boost_INCLUDE_DIR value.

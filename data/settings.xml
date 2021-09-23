@@ -8,10 +8,5 @@
   <!-- The size of a square in metres-->
   <Square_Size>0.022</Square_Size>
 
-  <!-- The input image directory -->
-  <Input_Directory>"data/gopro"</Input_Directory>
-  <!-- The input image extension (.jpg, .png, etc.) -->
-  <Input_Extension>".jpg"</Input_Extension>
-
 </Settings>
 </opencv_storage>

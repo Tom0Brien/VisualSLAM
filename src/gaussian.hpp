@@ -476,9 +476,14 @@ void measurementUpdateIEKF(
     Eigen::MatrixXd Q(mux.size(),mux.size());
     Eigen::VectorXd v(mux.size());
     Eigen::VectorXd g(mux.size());
-    constexpr int verbosity = 1; // 0:none, 1:dots, 2:summary, 3:iter
+    constexpr int verbosity = 3; // 0:none, 1:dots, 2:summary, 3:iter
     muxGy = mux; // Start optimisation at prior mean
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
+
+    std::cout << "v" << v << std::endl;
+    std::cout << "v.rows()" << v.rows() << std::endl;
+    std::cout << "Q" << Q << std::endl;
+    std::cout << "Q.rows()" << Q.rows() << std::endl;
 
     // H = Q*diag(v)*Q.'
     // S.'*S = P = inv(H) = Q*diag(1./v)*Q.' = Q*diag(1./realsqrt(v))*diag(1./realsqrt(v))*Q.'
@@ -487,6 +492,8 @@ void measurementUpdateIEKF(
     SxxGy = v.cwiseSqrt().cwiseInverse().asDiagonal()*Q.transpose();
     Eigen::HouseholderQR<Eigen::Ref<Eigen::MatrixXd>> qr(SxxGy); // decomposition in place
     SxxGy = qr.matrixQR().triangularView<Eigen::Upper>();
+    std::cout << "SxxGy" << SxxGy << std::endl;
+    std::cout << "SxxGy.rows()" << SxxGy.rows() << std::endl;
 }
 
 

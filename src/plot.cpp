@@ -665,11 +665,11 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     assert(S.cols() == nx_all);
 
     int nx      = 12;                    // Number of camera state   s
-    // assert( (nx_all - nx)>0);           // Check that there are features in the scene
-    assert( (nx_all - nx)% 6 == 0);     // Check that the dimension for features is correct
-    int nr      = (nx_all - nx)/6 ;      // Number of features
-    Eigen::VectorXd eta    = mu.head(6);
+    assert( (nx_all - nx)>0);           // Check that there are features in the scene
+    assert( (nx_all - nx)% 3 == 0);     // Check that the dimension for features is correct
+    int nr      = (nx_all - nx)/6;      // Number of features
 
+    Eigen::VectorXd eta    = mu.block(6,0,6,1);
     Eigen::VectorXd rCNn    = eta.head(3);
     Eigen::VectorXd Thetanc = eta.tail(3);
     Eigen::MatrixXd Rnc;
@@ -683,20 +683,17 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     // ---------------------------------------------------
 
     // Calculate marginal distribution for camera position
-    murCNn = mu.segment(0,3);
-    Eigen::HouseholderQR<Eigen::MatrixXd> qr(S.middleCols(0,3));
+    murCNn = eta.segment(0,3);
+    Eigen::HouseholderQR<Eigen::MatrixXd> qr(S.middleCols(6,3));
     SrCNn = Eigen::MatrixXd(qr.matrixQR().triangularView<Eigen::Upper>()).block(0,0,3,3);
 
 
     // ---------------------------------------------------
     //
+
+
     double r,g,b;
     hsv2rgb(330, 1., 1., r, g, b);
-    // std::cout << "murCNn " << murCNn << std::endl;
-    // std::cout << "murCNn rows" << murCNn.rows() << std::endl;
-    // std::cout << "SrCNn" << SrCNn << std::endl;
-    // std::cout << "SrCNn rows" << SrCNn.rows() << std::endl;
-    // std::cout << "SrCNn cols" << SrCNn.cols() << std::endl;
     quadricPlot_update(handles.qp_camera, murCNn, SrCNn);
     quadricPlot_getActor(handles.qp_camera)->GetProperty()->SetOpacity(0.1);
     quadricPlot_getActor(handles.qp_camera)->GetProperty()->SetColor(r,g,b);
@@ -746,9 +743,8 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
         quadricPlot_getActor(qp)->GetProperty()->SetOpacity(0.5);
         quadricPlot_getActor(qp)->GetProperty()->SetColor(r,g,b);
         bounds_setExtremity(qp.bounds, globalBounds);
+
     }
-
-
 
     axisPlot_update     (handles.ap, globalBounds);
     basisPlot_update    (handles.bp, eta);
