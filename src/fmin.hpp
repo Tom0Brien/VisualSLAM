@@ -42,7 +42,6 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
     Eigen::SelfAdjointEigenSolver<Matrix> eigenH(H);
     v = eigenH.eigenvalues();
     Q = eigenH.eigenvectors();
-    std::cout << "v " << v << std::endl;
 
     Scalar Delta = 1e0;     // Initial trust-region radius
 
@@ -79,7 +78,6 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
         {
             // Decrease trust region radius
             Delta = 0.25*p.norm();
-            // Delta = 0.25*Delta;
         }
         else
         {
@@ -102,7 +100,6 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
             Eigen::SelfAdjointEigenSolver<Matrix> eigenH(H);
             v = eigenH.eigenvalues();
             Q = eigenH.eigenvectors();
-            std::cout << "v " << v << std::endl;
         }
     }
     if (verbosity > 1)

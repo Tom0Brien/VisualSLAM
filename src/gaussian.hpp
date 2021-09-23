@@ -480,20 +480,26 @@ void measurementUpdateIEKF(
     muxGy = mux; // Start optimisation at prior mean
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
 
-    std::cout << "v" << v << std::endl;
-    std::cout << "v.rows()" << v.rows() << std::endl;
-    std::cout << "Q" << Q << std::endl;
-    std::cout << "Q.rows()" << Q.rows() << std::endl;
+    // std::cout << "v" << v << std::endl;
+    // std::cout << "v.rows()" << v.rows() << std::endl;
+    // std::cout << "Q" << Q << std::endl;
+    // std::cout << "Q.rows()" << Q.rows() << std::endl;
 
     // H = Q*diag(v)*Q.'
     // S.'*S = P = inv(H) = Q*diag(1./v)*Q.' = Q*diag(1./realsqrt(v))*diag(1./realsqrt(v))*Q.'
     // S = triu(qr(diag(1./realsqrt(v))*Q.'))
+    if(v.hasNaN()) {
+        std::cout << "v has nans" << std::endl;
+    }
+
+    if(Q.hasNaN()) {
+        std::cout << "Q has nans" << std::endl;
+    }
 
     SxxGy = v.cwiseSqrt().cwiseInverse().asDiagonal()*Q.transpose();
     Eigen::HouseholderQR<Eigen::Ref<Eigen::MatrixXd>> qr(SxxGy); // decomposition in place
     SxxGy = qr.matrixQR().triangularView<Eigen::Upper>();
-    std::cout << "SxxGy" << SxxGy << std::endl;
-    std::cout << "SxxGy.rows()" << SxxGy.rows() << std::endl;
+
 }
 
 

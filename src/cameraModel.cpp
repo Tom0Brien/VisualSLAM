@@ -378,16 +378,13 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     y       = rPCc(1);
     z       = rPCc(2);
 
-    // Check that z is positive
-    // assert(z>0);
-
-    if(z == 0) {
-        u = 0;
-        v = 0;
-    } else {
-        u       = x/z;
-        v       = y/z;
+    // Check that z is positive (in front of camera)
+    if(z <= 0) {
+        return 1;
     }
+
+    u       = x/z;
+    v       = y/z;
 
     using std::sqrt;
     using std::pow;

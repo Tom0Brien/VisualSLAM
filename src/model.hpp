@@ -13,6 +13,7 @@ struct SlamParameters
 {
     CameraParameters camera_param;
     std::vector<int> landmarks_seen;
+    int debug = 0;
 };
 
 

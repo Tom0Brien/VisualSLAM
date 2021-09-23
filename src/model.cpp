@@ -2,6 +2,7 @@
 #include "model.hpp"
 #include <iostream>
 
+#include<opencv2/opencv.hpp>
 
 
 // #include <autodiff/reverse/var.hpp>
@@ -28,9 +29,9 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
     rpy2rot(Thetanc,Rnc);
 
     // Kinematic transform T(nu)
-    double phi = Thetanc(0);
-    double theta =Thetanc(1);
-    double psi = Thetanc(2);
+    double phi   = Thetanc(0);
+    double theta = Thetanc(1);
+    double psi   = Thetanc(2);
 
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> T(3,3);
     using std::tan;
@@ -57,8 +58,8 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
     operator()(x,u,param,f);
     SQ.resize(x.rows(),x.rows());
     SQ.setZero();
-    double position_tune = 0.01;
-    double orientation_tune = 0.01;
+    double position_tune = 1;
+    double orientation_tune = 1;
     double landmark_tune = 0;
     SQ.block(0,0,3,3) = position_tune*Eigen::MatrixXd::Identity(3,3);
     SQ.block(3,3,3,3) = orientation_tune*Eigen::MatrixXd::Identity(3,3);
@@ -143,10 +144,6 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
 
     dfdx.block(6,6,6,6) = dfdnu;
 
-    std::cout << "dfdx: "  << dfdx  << std::endl;
-    std::cout << "dfdx.rows(): "  << dfdx.rows()  << std::endl;
-    std::cout << "dfdx.cols(): "  << dfdx.cols()  << std::endl;
-
 }
 
 // Templated version of SlamLogLikelihood
@@ -163,11 +160,10 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> Thetanj(3,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> Rnj(3,3);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn(3,1);
-    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rQOi(2,1);
-    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rQOj(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_pixel(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_pixel(2,1);
 
     // y are corner pixels [nj*2*4, 1]
-    // std::cout << "y : " << y << std::endl;
     // Evaluate log N(y;h(x),R)
     int nx = 12;
 
@@ -178,53 +174,59 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
     rJcJj.block(0,1,3,1) <<  length/2,  length/2, 0;
     rJcJj.block(0,2,3,1) <<  length/2, -length/2, 0;
     rJcJj.block(0,3,3,1) << -length/2, -length/2, 0;
-    // std::cout << "local marker corners : " << rJcJj << std::endl;
 
     // TODO: upper Cholesky factor of measurement covariance (pixel)
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR(2,2);
     double tune = 5;
     SR = tune*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
-    // SR(0,0) = 1920;
-    // SR(1,1) = 1080;
 
     Scalar cost = 0;
-    //For each landmark seen
     eta = x.block(6,0,6,1);
     int count = 0;
-    for(int j = 0; j < param.landmarks_seen.size(); j++) {
+    //For each landmark seen
+    for(int l = 0; l < param.landmarks_seen.size(); l++) {
+        int landmark_index = param.landmarks_seen[l];
         // For each corner of the landmark
         // *** State Predicted Landmark Location *** //
-        rJNn = x.block(nx+6*param.landmarks_seen[j],0,3,1);
-        // std::cout << " rJNn : " << rJNn << std::endl;
-        Thetanj = x.block(nx+3+6*param.landmarks_seen[j],0,3,1);
-        // std::cout << " Thetanj : " << Thetanj << std::endl;
+        rJNn = x.segment(nx+landmark_index*6,3);
+        Thetanj = x.segment(nx+3+landmark_index*6,3);
         rpy2rot(Thetanj,Rnj);
-        // std::cout << " Rnj : " << Rnj << std::endl;
         for(int c = 0; c < 4; c++) {
             count++;
             // Calculate the corner coords from our state into world space and convert to pixel to compare against the measurements
+
             // *** State Predicted Corner Pixel *** //
-            rJcNn = Rnj*rJcJj.block(0,c,3,1)+ rJNn;
-            // std::cout << "State corner of marker location : " << rJcNn << std::endl;
-            // std::cout << " eta : " << eta << std::endl;
-            int flag = worldToPixel(rJcNn,eta,param.camera_param,rQOi);
-            // assert(flag == 0);
-            // std::cout << " rQOi : " << rQOi << std::endl;
+            rJcNn = Rnj*rJcJj.block(0,c,3,1) + rJNn;
+            int flag = worldToPixel(rJcNn,eta,param.camera_param,state_pixel);
+            assert(flag == 0);
 
             // *** Measurement Corner Pixel ***//
-            rQOj = y.block(8*j+2*c, 0, 2, 1);
-            // std::cout << " rQOj : " << rQOj << "\n";
+            measurement_pixel = y.segment(8*l + 2*c,2);
 
-            // std::cout << "Measurement Corner Pixel : " << rQOj << "\n";
-            // std::cout << "State Predicted Corner Pixel : " << rQOi << "\n";
+            if(param.debug == 1) {
+                //  std::cout << "rJNn for landmark " << landmark_index << " corner " << c << ": " << rJNn << std::endl;
+                //  std::cout << "rJcNn for landmark " << landmark_index << " corner " << c << ": " << rJcNn << std::endl;
+                //  std::cout << "state_pixel for landmark " << landmark_index << " corner " << c << ": " << state_pixel << std::endl;
+                //  std::cout << "measurement_pixel for landmark " << landmark_index << " corner " << c << ": " << measurement_pixel << std::endl;
+            }
 
             // Sum up log gausian for each measurement
-            // std::cout << count << std::endl;
-            cost += logGaussian(rQOj,rQOi, SR);
+            if(flag == 0) {
+                cost += logGaussian(measurement_pixel,state_pixel, SR);
+            }
         }
     }
-    // std::cout << "cost " << cost <<std::endl;
-    // assert(0);
+
+    if(param.debug == 1) {
+            // std::cout << "landmark states: " << x.segment(12,x.rows()-12) << std::endl;
+            // std::cout << "y " << y << std::endl;
+            // cv::Mat debug;
+            // debug = cv::imread("../data/1023.jpg");
+            // cv::imshow("meme debugger", debug);
+            // int wait = cv::waitKey(0);
+    }
+
+
     return cost;
 }
 
