@@ -4,7 +4,7 @@
 #include "model.hpp"
 
 #include <iostream>
-
+#include <chrono>
 #include <Eigen/Core>
 
 
@@ -80,7 +80,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                  0; // Phi
 
     //Initialize the plot states
-    int max_landmarks = 1000;
+    int max_landmarks = 30;
     Eigen::VectorXd muPlot(nx+max_landmarks*6);
     muPlot.setZero();
     muPlot.segment(0,12) = muEKF;
@@ -117,6 +117,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     std::cout << "fps : " << fps << std::endl;
     std::cout << "timestep : " << timestep << std::endl;
     int count = 0;
+    double total_time = 0;
 
     Eigen::VectorXd muf, mup;
 
@@ -125,6 +126,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         if(view.empty()){
             break;
         }
+
+        //Start timer
         count++;
         cv::Mat imgout;
         Eigen::VectorXd xk, yk;
@@ -170,19 +173,18 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                 muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                 mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                double kappa = 0.01;
+                double kappa = 0.125;
                 for(int k = 0; k < 6; k++){
                     SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                     Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
                 }
 
                 // Add initial good guess
-                rot2rpy(detected_markers[i].Rcm,Thetacm);
                 Thetanc = mup.block(9,0,3,1);
                 rpy2rot(Thetanc, Rnc);
                 Rnm = Rnc*detected_markers[i].Rcm;
                 rot2rpy(Rnm,Thetanm);
-                rMNn = mup.block(6,0,3,1) + Rnc*detected_markers[i].rMCc;
+                rMNn = mup.segment(6,3) + Rnc*detected_markers[i].rMCc;
                 mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
 
                 // Add marker corner measurements to vector yk
@@ -203,45 +205,30 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         }
 
         assert(yk.size() % 8 == 0);
-        // for(int k = 0; k < slamparam.landmarks_seen.size(); k++) {
-        //     std::cout << "landmarks seen : " <<  slamparam.landmarks_seen[k] << std::endl;
-        // }
-        // std::cout << "yk: " << yk << std::endl;
-        // std::cout << "yk.rows(): " << yk.rows() << std::endl;
 
-
-        //*********** 6. Perform measurement update
-        // Calculate filtered density
-        // std::cout << " Measurement update " << std::endl;
-        // if(count > 26) {
-        //     slamparam.debug = 1;
-        //     std::cout << "mup " << mup << std::endl;
-        //     std::cout << "mup.rows() " << mup.rows() << std::endl;
-        //     vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
-        //     vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
-        //     threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
-        //     threeDimInteractor->SetRenderWindow(handles.renderWindow);
-        //     threeDimInteractor->Initialize();
-        //     threeDimInteractor->Start();
-        //     initPlotStates(muPlot, SPlot, param, handles);
-        // }
-
+        std::cout << "frame no. : " << count << std::endl;
+        auto t_start = std::chrono::high_resolution_clock::now();
         measurementUpdateIEKF(mup, Sp, u, yk, ll, slamparam, muf, Sf);
+        auto t_end = std::chrono::high_resolution_clock::now();
         muEKF               = muf;
         SEKF                = Sf;
+        double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+        std::cout << "Time taken for 1 frame [s]: " << elapsed_time_ms/1000 << std::endl;
+        total_time += elapsed_time_ms/1000;
+        std::cout << "Total Time taken [s]: " << total_time << std::endl;
+
 
 
         //**********  Plotting **********//
 
         muPlot.segment(0,muEKF.rows()) = muEKF;
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
-        if (interactive != 2 && count % 75 != 0){
+        if (interactive != 2 && count % 1300 != 0){
             // updatePlotStates(view, muPlot, SPlot, param, handles);
 
         }
         else
         {
-            std::cout << "frame no. : " << count << std::endl;
             updatePlotStates(view, muEKF, SEKF, param, handles);
             std::cout << "world postion: " << muEKF.segment(6,3) << std::endl;
             // -------------------------
@@ -267,4 +254,17 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             return;
         }
     }
+
+    updatePlotStates(view, muEKF, SEKF, param, handles);
+    std::cout << "world postion: " << muEKF.segment(6,3) << std::endl;
+    // -------------------------
+    // Attach interactor for playing with the 3d interface
+    // -------------------------
+    vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+    vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+    threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+    threeDimInteractor->SetRenderWindow(handles.renderWindow);
+    threeDimInteractor->Initialize();
+    threeDimInteractor->Start();
+    initPlotStates(muPlot, SPlot, param, handles);
 }

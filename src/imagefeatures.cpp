@@ -138,11 +138,8 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 
 // }
 int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & detected_markers,const CameraParameters & param){
-    // std::cout << "Using Marker detector" << std::endl;
-    // std::cout << "Width : " << img.cols << std::endl;
-    // std::cout << "Height: " << img.rows << std::endl;
 
-    std::vector<int> markerIds;
+     std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
     cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
@@ -151,10 +148,6 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     std::vector<cv::Vec3d> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(markerCorners, 0.166, param.Kc, param.distCoeffs, rvecs, tvecs);
 
-    // for(int i = 0; i < markerCorners.size(); i++){
-    //     std::cout << "tvecs" << tvecs[i] << std::endl;
-    //     std::cout << "rvecs" << rvecs[i] << std::endl;
-    // }
 
     //Add all markers to a struct
     for(int i = 0; i < markerCorners.size();i++){
@@ -174,15 +167,7 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     //Sort struct by id
     std::sort(detected_markers.begin(),detected_markers.end(),&sortById);
 
-    //Print out sorted markers
-    // for(int i = 0; i < markerCorners.size();i++){
-    //     std::cout << "ID: " << detected_markers[i].id << "   with corners: "
-    //     << detected_markers[i].corners[0] << "," << detected_markers[i].corners[1] << ","
-    //     << detected_markers[i].corners[2] << ","<< detected_markers[i].corners[3] << std::endl;
-    // }
-
     //Show markers detected
-    // const char* detected_markers = ;
     imgout = img;
     cv::aruco::drawDetectedMarkers(imgout, markerCorners, markerIds);
     for (int i = 0; i < rvecs.size(); ++i) {
@@ -190,8 +175,6 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
         auto tvec = tvecs[i];
         cv::aruco::drawAxis(imgout, param.Kc, param.distCoeffs, rvec, tvec, 0.1);
     }
-    // cv::imshow("Corners detected", imgout);
-    // int wait = cv::waitKey(1);
     return 0;
 }
 int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures){

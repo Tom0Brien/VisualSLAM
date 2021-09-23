@@ -11,8 +11,8 @@
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
-// #include <autodiff/forward.hpp>
-// #include <autodiff/forward/eigen.hpp>
+// #include <autodiff/reverse/var.hpp>
+// #include <autodiff/reverse/var/eigen.hpp>
 
 using std::sqrt;
 
@@ -163,70 +163,36 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_pixel(2,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_pixel(2,1);
 
-    // y are corner pixels [nj*2*4, 1]
-    // Evaluate log N(y;h(x),R)
-    int nx = 12;
-
     // Corner local measurements
     Scalar length = 0.166;
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> rJcJj(3,4);
-    rJcJj.block(0,0,3,1) << -length/2,  length/2, 0;
-    rJcJj.block(0,1,3,1) <<  length/2,  length/2, 0;
-    rJcJj.block(0,2,3,1) <<  length/2, -length/2, 0;
-    rJcJj.block(0,3,3,1) << -length/2, -length/2, 0;
+    rJcJj << -length/2,length/2,length/2,-length/2,length/2,length/2,-length/2,-length/2,0,0,0,0;
 
-    // TODO: upper Cholesky factor of measurement covariance (pixel)
-    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR(2,2);
-    double tune = 5;
-    SR = tune*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = 25*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
 
     Scalar cost = 0;
-    eta = x.block(6,0,6,1);
-    int count = 0;
-    //For each landmark seen
+    eta = x.segment(6,6);
+    //For each landmark seenauto t_start = std::chrono::high_resolution_clock::now();
     for(int l = 0; l < param.landmarks_seen.size(); l++) {
-        int landmark_index = param.landmarks_seen[l];
-        // For each corner of the landmark
         // *** State Predicted Landmark Location *** //
-        rJNn = x.segment(nx+landmark_index*6,3);
-        Thetanj = x.segment(nx+3+landmark_index*6,3);
+        rJNn = x.segment(12+param.landmarks_seen[l]*6,3);
+        Thetanj = x.segment(12+3+param.landmarks_seen[l]*6,3);
         rpy2rot(Thetanj,Rnj);
+        // For each corner of the landmark
         for(int c = 0; c < 4; c++) {
-            count++;
-            // Calculate the corner coords from our state into world space and convert to pixel to compare against the measurements
-
             // *** State Predicted Corner Pixel *** //
-            rJcNn = Rnj*rJcJj.block(0,c,3,1) + rJNn;
-            int flag = worldToPixel(rJcNn,eta,param.camera_param,state_pixel);
-            // assert(flag == 0);
+            rJcNn = Rnj*rJcJj.col(c) + rJNn;
+            int w2p_flag = worldToPixel(rJcNn,eta,param.camera_param,state_pixel);
 
             // *** Measurement Corner Pixel ***//
             measurement_pixel = y.segment(8*l + 2*c,2);
 
-            if(param.debug == 1) {
-                //  std::cout << "rJNn for landmark " << landmark_index << " corner " << c << ": " << rJNn << std::endl;
-                //  std::cout << "rJcNn for landmark " << landmark_index << " corner " << c << ": " << rJcNn << std::endl;
-                //  std::cout << "state_pixel for landmark " << landmark_index << " corner " << c << ": " << state_pixel << std::endl;
-                //  std::cout << "measurement_pixel for landmark " << landmark_index << " corner " << c << ": " << measurement_pixel << std::endl;
-            }
-
             // Sum up log gausian for each measurement
-            if(flag == 0) {
+            if(w2p_flag == 0) {
                 cost += logGaussian(measurement_pixel,state_pixel, SR);
             }
         }
     }
-
-    if(param.debug == 1) {
-            // std::cout << "landmark states: " << x.segment(12,x.rows()-12) << std::endl;
-            // std::cout << "y " << y << std::endl;
-            // cv::Mat debug;
-            // debug = cv::imread("../data/1023.jpg");
-            // cv::imshow("meme debugger", debug);
-            // int wait = cv::waitKey(0);
-    }
-
-
     return cost;
 }
 
@@ -242,7 +208,11 @@ double SlamLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Vec
 {
     Eigen::Matrix<autodiff::dual,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual>();
     autodiff::dual fdual;
+    auto t_start = std::chrono::high_resolution_clock::now();
     g = autodiff::gradient(slamLogLikelihood<autodiff::dual>, wrt(xdual), at(y,xdual,u,param), fdual);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    // std::cout << "Time taken for gradient calc [s]: " << elapsed_time_ms/1000 << std::endl;
     return val(fdual);
 }
 
@@ -250,7 +220,11 @@ double SlamLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Vec
 {
     Eigen::Matrix<autodiff::dual2nd,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual2nd>();
     autodiff::dual2nd fdual;
+    auto t_start = std::chrono::high_resolution_clock::now();
     H = autodiff::hessian(slamLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    // std::cout << "Time taken for hessian calc [s]: " << elapsed_time_ms/1000 << std::endl;
     return val(fdual);
 }
 

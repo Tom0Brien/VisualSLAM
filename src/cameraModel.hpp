@@ -196,7 +196,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
     u2      = u*u;
     v2      = v*v;
     r2      = u2 + v2;
-    r       = sqrt(r2);
+    // r       = sqrt(r2);
     r4      = r2*r2;
     r6      = r4*r2;
 
@@ -206,6 +206,11 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     up      = c*u + p1*2*u*v + p2*(r2 + 2*u2) + s1*r2 + s2*r4;
     vp      = c*v + p2*2*u*v + p1*(r2 + 2*v2) + s3*r2 + s4*r4;
+
+    // std::cout << "new u: " << u + alpha*u + 2*p1*u*v + p2*(r2 + 2*u2)  + s1*r2 + s2*r4 << std::endl;
+    // std::cout << "new v: " << v + alpha*v + p1*(r2 + 2*v2) + 2*p2*u*v + s3*r2 + s4*r4 << std::endl;
+
+
     rQOi    << fx*up + cx, fy*vp + cy;
     // std::cout << "rQOi in w2p: " << rQOi << std::endl;
 
