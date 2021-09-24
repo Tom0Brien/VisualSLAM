@@ -40,9 +40,9 @@ Scalar logGaussian(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> &x,
 
     Scalar n = x.rows();
     Scalar log_sum = S.diagonal().array().abs().log().sum();
-    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> Z = S.template triangularView<Eigen::Upper>().transpose().solve(x - mu);
-    return -0.5*Z.squaredNorm() - n/2*std::log(2*M_PI) - log_sum;
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> Z = S.template triangularView<Eigen::Upper>().transpose().solve(x - mu);
 
+    return -0.5*Z.squaredNorm() - n/2*std::log(2*M_PI) - log_sum;
 }
 
 template <typename Scalar>
@@ -476,7 +476,7 @@ void measurementUpdateIEKF(
     Eigen::MatrixXd Q(mux.size(),mux.size());
     Eigen::VectorXd v(mux.size());
     Eigen::VectorXd g(mux.size());
-    constexpr int verbosity = 1; // 0:none, 1:dots, 2:summary, 3:iter
+    constexpr int verbosity = 3; // 0:none, 1:dots, 2:summary, 3:iter
     muxGy = mux; // Start optimisation at prior mean
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
 

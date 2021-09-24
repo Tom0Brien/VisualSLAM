@@ -76,8 +76,10 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     uQCc        = rPCc / rPCc.norm();
 
-    double maxAngle = param.fieldOfView*((CV_PI/180.0)/2.);
-    double cAngle   = std::cos(maxAngle);
+    using std::cos;
+
+    Scalar maxAngle = param.fieldOfView*((CV_PI/180.0)/2.);
+    Scalar cAngle   = cos(maxAngle);
 
     if (uQCc(2)<cAngle){
         // Pixel is not within the cone of the camera
@@ -96,7 +98,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
     assert(isSupported);
 
     // Constants
-    double
+    Scalar
             cx,
             cy,
             fx,
@@ -177,6 +179,9 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
             y,
             z;
 
+
+    // std::cout << "rPCc " << rPCc << std::endl;
+    // assert(0);
     x       = rPCc(0);
     y       = rPCc(1);
     z       = rPCc(2);
@@ -196,7 +201,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
     u2      = u*u;
     v2      = v*v;
     r2      = u2 + v2;
-    // r       = sqrt(r2);
+    r       = sqrt(r2);
     r4      = r2*r2;
     r6      = r4*r2;
 
@@ -206,11 +211,6 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     up      = c*u + p1*2*u*v + p2*(r2 + 2*u2) + s1*r2 + s2*r4;
     vp      = c*v + p2*2*u*v + p1*(r2 + 2*v2) + s3*r2 + s4*r4;
-
-    // std::cout << "new u: " << u + alpha*u + 2*p1*u*v + p2*(r2 + 2*u2)  + s1*r2 + s2*r4 << std::endl;
-    // std::cout << "new v: " << v + alpha*v + p1*(r2 + 2*v2) + 2*p2*u*v + s3*r2 + s4*r4 << std::endl;
-
-
     rQOi    << fx*up + cx, fy*vp + cy;
     // std::cout << "rQOi in w2p: " << rQOi << std::endl;
 

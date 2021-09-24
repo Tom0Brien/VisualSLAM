@@ -45,7 +45,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     // Initialise filter
     SEKF.fill(0);
-    SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.1,0.1,0.1,0.1,0.1,0.1;
+    SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,0.25,0.25,0.25;
 
     muEKF <<     0, // x dot
                  0, // y dot
@@ -56,9 +56,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                  0, // x
                  0, // y
                  -1.8, // z
-                 -3.14159265359/2, // Psi
-                 3.14159265359, // Theta
-                 0; // Phi
+                 3.14159265359/2, // Psi
+                 0, // Theta
+                 3.14159265359; // Phi
 
     //Initialize the plot states
     int max_landmarks = 50;
@@ -118,7 +118,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // Calculate prediction density
         // std::cout << " Time update " << std::endl;
         timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
-
         // ****** 2. Identify landmarks with matching features ******/////
         slamparam.landmarks_seen.clear();
         int n_measurements;
@@ -153,7 +152,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                 muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                 mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                double kappa = 1;
+                double kappa = 0.125;
                 for(int k = 0; k < 6; k++){
                     SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                     Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
@@ -166,7 +165,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Rnm = Rnc*detected_markers[i].Rcm;
                 rot2rpy(Rnm,Thetanm);
                 rMNn = mup.segment(6,3) + Rnc*detected_markers[i].rMCc;
-                mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
+                Eigen::MatrixXd disturbace (3,1);
+                disturbace << 1,1,1;
+
+                mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm+0.1*disturbace;
 
                 // Add marker corner measurements to vector yk
                 n_measurements = yk.rows();
@@ -201,7 +203,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         //**********  Plotting **********//
         muPlot.segment(0,muEKF.rows()) = muEKF;
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
-        if (interactive != 2 && count % 50 != 0){
+        if (interactive != 2 && count % 1 != 0){
             updatePlotStates(imgout, muPlot, SPlot, param, handles);
         }
         else
