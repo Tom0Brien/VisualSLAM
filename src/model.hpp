@@ -40,5 +40,4 @@ struct SlamLogLikelihood
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 };
 
-
 #endif

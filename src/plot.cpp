@@ -757,8 +757,8 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(0,0,0);
 
     double sc = 2;
-    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-0.75*sc,-0.75*sc,-0.5*sc);
-    handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-3);
+    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-3*sc,-3*sc,3*sc);
+    handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-2);
 
     handles.renderWindow->Render();
     handles.renderWindow->SetWindowName("Confidence ellipses");

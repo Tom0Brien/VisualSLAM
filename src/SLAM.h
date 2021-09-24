@@ -12,6 +12,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/videoio.hpp>
+#include <opencv2/aruco.hpp>
 
 #include <vtkRenderWindowInteractor.h>
 #include <vtkInteractorStyleTrackballCamera.h>
@@ -22,5 +23,16 @@
 #include "gaussian.hpp"
 
 
+#include <iostream>
+#include <chrono>
+
+
+#include "imagefeatures.h"
+#include "plot.h"
+#include "cameraModel.hpp"
+#include "model.hpp"
+
+
 void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, const std::filesystem::path &outputDirectory);
+
 #endif
