@@ -165,10 +165,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Rnm = Rnc*detected_markers[i].Rcm;
                 rot2rpy(Rnm,Thetanm);
                 rMNn = mup.segment(6,3) + Rnc*detected_markers[i].rMCc;
-                Eigen::MatrixXd disturbace (3,1);
-                disturbace << 1,1,1;
-
-                mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm+0.1*disturbace;
+                mup.block(mup.rows()-6,0,6,1) << rMNn, Thetanm;
 
                 // Add marker corner measurements to vector yk
                 n_measurements = yk.rows();
