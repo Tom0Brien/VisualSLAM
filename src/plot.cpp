@@ -600,7 +600,7 @@ vtkActor2D * imagePlot_getActor2D(ImagePlot & ip){
 // -------------------------------------------------------
 // Plotting of states
 // -------------------------------------------------------
-void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles){
+void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles, const SlamParameters & slamparam){
 
     int nx_all  = mu.rows();
     assert(S.rows() == nx_all);
@@ -658,7 +658,7 @@ void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const
     handles.imageRenderer->AddActor2D(imagePlot_getActor2D(handles.ip));
 }
 
-void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles){
+void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles, const SlamParameters & slamparam){
 
     int nx_all  = mu.rows();
     assert(S.rows() == nx_all);
@@ -728,13 +728,19 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
         // ---------------------------------------------------
         //
 
-
         // Add components to render
-        hsv2rgb(300*(i)/(nr), 1., 1., r, g, b);
         Eigen::Vector3d rgb;
-        rgb(0) = r*255;
-        rgb(1) = g*255;
-        rgb(2) = b*255;
+        if(std::find(slamparam.landmarks_seen.begin(), slamparam.landmarks_seen.end(), i) != slamparam.landmarks_seen.end()) {
+            hsv2rgb(240, 1., 1., r, g, b);
+            rgb(0) = 0;
+            rgb(1) = 0;
+            rgb(2) = 255;
+        } else {
+            hsv2rgb(0., 1., 1., r, g, b);
+            rgb(0) = 255;
+            rgb(1) = 0;
+            rgb(2) = 0;
+        }
 
         plotFeatureGaussianConfidenceEllipse(outView, murPNn, SrPNn, eta, param, rgb);
 

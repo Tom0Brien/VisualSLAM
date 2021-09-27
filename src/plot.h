@@ -29,6 +29,7 @@
 #include <vtkUnstructuredGrid.h>
 
 #include "cameraModel.hpp"
+#include "model.hpp"
 
 
 
@@ -156,8 +157,8 @@ struct PlotHandles{
 void plotFeatureGaussianConfidenceEllipse(cv::Mat & img, const Eigen::VectorXd & murPNn, const Eigen::MatrixXd & SrPNn, const Eigen::VectorXd & eta, const CameraParameters & param, const Eigen::Vector3d & color);
 void plotFeatureGaussianConfidenceQuadric(vtkActor* contourActor, const Eigen::VectorXd & murPNn, const Eigen::MatrixXd & SrPNn);
 
-void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles);
-void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles);
+void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles, const SlamParameters & slamparam);
+void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const CameraParameters & param, PlotHandles & handles, const SlamParameters & slamparam);
 
 void WriteImage(std::string const& fileName, vtkRenderWindow* renWin, bool rgba=false);
 

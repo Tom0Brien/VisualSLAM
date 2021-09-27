@@ -31,6 +31,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     //Define process model and measurement model
     SlamProcessModel     pm;
     SlamLogLikelihood    ll;
+    // slamLogLikelihoodAnalytical ll;
+
+
     SlamParameters slamparam;
     CameraParameters camera_param;
     importCalibrationData(cameraDataPath.string(), camera_param);
@@ -70,7 +73,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     SPlot.block(0,0,12,12) = SEKF;
     // Initialize plot states
     PlotHandles handles;
-    initPlotStates(muPlot, SPlot, param, handles);
+    initPlotStates(muPlot, SPlot, param, handles,slamparam);
 
 
 
@@ -94,6 +97,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     Eigen::VectorXd u;
     double fps = cap.get(cv::CAP_PROP_FPS);
+    double no_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+    std::cout << "no_frames: " << no_frames << std::endl;
     double timestep = 1/fps;
     std::cout << "fps : " << fps << std::endl;
     std::cout << "timestep : " << timestep << std::endl;
@@ -152,7 +157,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                 muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                 mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                double kappa = 0.125;
+                double kappa = 0.05;
                 for(int k = 0; k < 6; k++){
                     SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                     Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
@@ -200,14 +205,30 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         //**********  Plotting **********//
         muPlot.segment(0,muEKF.rows()) = muEKF;
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
-        if (interactive != 2 && count % 1 != 0){
-            updatePlotStates(imgout, muPlot, SPlot, param, handles);
+        if (interactive == 0){
+            updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
+        } else if (interactive == 1) {
+            updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
+            if(count == no_frames) {
+                PlotHandles tmpHandles;
+                initPlotStates(muPlot, SPlot, param, tmpHandles,slamparam);
+                updatePlotStates(imgout, muPlot, SPlot, param, tmpHandles,slamparam);
+                // -------------------------
+                // Attach interactor for playing with the 3d interface
+                // -------------------------
+                vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+                vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+                threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+                threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
+                threeDimInteractor->Initialize();
+                threeDimInteractor->Start();
+            }
         }
-        else
+        else if (interactive == 2 && count % 1 == 0)
         {
             PlotHandles tmpHandles;
-            initPlotStates(muPlot, SPlot, param, tmpHandles);
-            updatePlotStates(imgout, muPlot, SPlot, param, tmpHandles);
+            initPlotStates(muPlot, SPlot, param, tmpHandles,slamparam);
+            updatePlotStates(imgout, muPlot, SPlot, param, tmpHandles,slamparam);
             std::cout << "world postion: " << muEKF.segment(6,3) << std::endl;
             // -------------------------
             // Attach interactor for playing with the 3d interface
@@ -218,7 +239,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
             threeDimInteractor->Initialize();
             threeDimInteractor->Start();
-            }
+        }
 
 
 
