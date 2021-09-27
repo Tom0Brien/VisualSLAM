@@ -59,9 +59,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                  0, // x
                  0, // y
                  -1.8, // z
-                 3.14159265359/2, // Psi
-                 0, // Theta
-                 3.14159265359; // Phi
+                 -3.14159265359/2, // Psi
+                 3.14159265359, // Theta
+                 0  ; // Phi
 
     //Initialize the plot states
     int max_landmarks = 50;
@@ -199,6 +199,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         std::cout << "Time taken for 1 frame [s]: " << elapsed_time_ms/1000 << std::endl;
         total_time += elapsed_time_ms/1000;
         std::cout << "Total Time taken [s]: " << total_time << std::endl;
+        std::cout << "World Position (N,E,D) : (" << muEKF(6) <<","<< muEKF(7) << "," << muEKF(8)<< ")" << std::endl;
+        std::cout << "World Orientation (phi,theta,psi) : (" << muEKF(9) <<","<< muEKF(10) << "," << muEKF(11)<< ")" << std::endl;
 
 
 
@@ -229,7 +231,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             PlotHandles tmpHandles;
             initPlotStates(muPlot, SPlot, param, tmpHandles,slamparam);
             updatePlotStates(imgout, muPlot, SPlot, param, tmpHandles,slamparam);
-            std::cout << "world postion: " << muEKF.segment(6,3) << std::endl;
             // -------------------------
             // Attach interactor for playing with the 3d interface
             // -------------------------

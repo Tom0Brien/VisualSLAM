@@ -56,7 +56,7 @@ endif()
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "C:/msys64/home/Tom/VisualSLAM/test/src/*.cpp")
 set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/test/src/main.cpp"
-  "C:/msys64/home/Tom/VisualSLAM/test/src/model.cpp"
+  "C:/msys64/home/Tom/VisualSLAM/test/src/measurementModel.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/plot.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")

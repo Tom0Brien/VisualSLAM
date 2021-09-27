@@ -379,12 +379,13 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     z       = rPCc(2);
 
     // Check that z is positive (in front of camera)
-    if(z <= 0) {
-        return 1;
+    if(z == 0) {
+        u = 0;
+        v = 0;
+    } else {
+        u = x/z;
+        v = y/z;
     }
-
-    u       = x/z;
-    v       = y/z;
 
     using std::sqrt;
     using std::pow;
@@ -407,12 +408,17 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     vp      = c*v + p2*2*u*v + p1*(r2 + 2*v2) + s3*r2 + s4*r4;
 
     Eigen::MatrixXd dudr;
-    dudr.resize(1,3);
-    dudr << 1/z, 0, -x/(z*z);
-
     Eigen::MatrixXd dvdr;
+    dudr.resize(1,3);
     dvdr.resize(1,3);
-    dvdr << 0, 1/z, -y/(z*z);
+    if(z == 0){
+        dudr << 0,0,0;
+        dvdr << 0,0,0;
+    } else {
+        dudr << 1/z, 0, -x/(z*z);
+        dvdr << 0, 1/z, -y/(z*z);
+    }
+
 
     double drdu = pow(u2 + v2,-0.5)*u;
     double drdv = pow(u2 + v2,-0.5)*v;
@@ -430,8 +436,6 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
 
     double dvddv = dcdr*drdv*v + c + 2*p2*u + p1*(2*r*drdv + 4*v) + 2*s3*r*drdv + 4*s4*r3*drdv;
 
-
-
     Eigen::MatrixXd A;
     A.resize(1,3);
     A = fx*(duddu*dudr + duddv*dvdr);
@@ -443,6 +447,9 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     J.resize(2,3);
     J << A, B;
     J = J*Rnc.transpose();
+    if(z == 0) {
+        J.setZero();
+    }
 
 
     return res;

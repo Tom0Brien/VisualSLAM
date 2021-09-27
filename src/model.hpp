@@ -13,7 +13,6 @@ struct SlamParameters
 {
     CameraParameters camera_param;
     std::vector<int> landmarks_seen;
-    int debug = 0;
 };
 
 
@@ -39,5 +38,11 @@ struct SlamLogLikelihood
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g);
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 };
+struct slamLogLikelihoodAnalytical
+{
+   double operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
+};
+
+// double slamLogLikelihoodAnalytical(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 
 #endif
