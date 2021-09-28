@@ -608,8 +608,9 @@ void initPlotStates(const Eigen::VectorXd & mu, const Eigen::MatrixXd & S, const
 
     int nx      = 12;                    // Number of camera states
     // assert( (nx_all - nx)>0);           // Check that there are features in the scene
-    assert( (nx_all - nx)% 6 == 0);     // Check that the dimension for features is correct
-    int nr      = (nx_all - nx)/6;      // Number of features
+    int n_landmark = slamparam.n_landmark;
+    assert( (nx_all - nx)% n_landmark == 0);     // Check that the dimension for features is correct
+    int nr      = (nx_all - nx)/n_landmark;      // Number of features
 
     double aspectRatio  = (1.0*param.imageSize.width)/param.imageSize.height;
 
@@ -665,9 +666,10 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     assert(S.cols() == nx_all);
 
     int nx      = 12;                    // Number of camera state   s
+    int n_landmark = slamparam.n_landmark;
     assert( (nx_all - nx)>0);           // Check that there are features in the scene
-    assert( (nx_all - nx)% 3 == 0);     // Check that the dimension for features is correct
-    int nr      = (nx_all - nx)/6;      // Number of features
+    assert( (nx_all - nx)% n_landmark == 0);     // Check that the dimension for features is correct
+    int nr      = (nx_all - nx)/n_landmark;      // Number of features
 
     Eigen::VectorXd eta    = mu.block(6,0,6,1);
     Eigen::VectorXd rCNn    = eta.head(3);
@@ -722,8 +724,8 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
         // ---------------------------------------------------
 
         // Calculate marginal distribution for feature positions
-        murPNn = mu.segment(nx+i*6,3);
-        Eigen::HouseholderQR<Eigen::MatrixXd> qr(S.middleCols(nx+i*6,3));
+        murPNn = mu.segment(nx+i*n_landmark,3);
+        Eigen::HouseholderQR<Eigen::MatrixXd> qr(S.middleCols(nx+i*n_landmark,3));
         SrPNn = Eigen::MatrixXd(qr.matrixQR().triangularView<Eigen::Upper>()).block(0,0,3,3);
         // ---------------------------------------------------
         //

@@ -9,10 +9,12 @@ set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/src/SLAMold.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/calibrate.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/cameraModel.cpp"
+  "C:/msys64/home/Tom/VisualSLAM/src/dataAssociation.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/fmin.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/gaussian.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/imagefeatures.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/main.cpp"
+  "C:/msys64/home/Tom/VisualSLAM/src/measurementPointLandmark.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/model.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/plot.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/settings.cpp"
@@ -28,6 +30,7 @@ file(GLOB NEW_GLOB LIST_DIRECTORIES true "C:/msys64/home/Tom/VisualSLAM/src/*.h"
 set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/src/SLAM.h"
   "C:/msys64/home/Tom/VisualSLAM/src/calibrate.h"
+  "C:/msys64/home/Tom/VisualSLAM/src/dataAssociation.h"
   "C:/msys64/home/Tom/VisualSLAM/src/imagefeatures.h"
   "C:/msys64/home/Tom/VisualSLAM/src/plot.h"
   "C:/msys64/home/Tom/VisualSLAM/src/settings.h"
@@ -44,6 +47,7 @@ set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/src/cameraModel.hpp"
   "C:/msys64/home/Tom/VisualSLAM/src/fmin.hpp"
   "C:/msys64/home/Tom/VisualSLAM/src/gaussian.hpp"
+  "C:/msys64/home/Tom/VisualSLAM/src/measurementPointLandmark.hpp"
   "C:/msys64/home/Tom/VisualSLAM/src/model.hpp"
   "C:/msys64/home/Tom/VisualSLAM/src/rotation.hpp"
   )
@@ -55,6 +59,7 @@ endif()
 # SRC_TEST at CMakeLists.txt:73 (file)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "C:/msys64/home/Tom/VisualSLAM/test/src/*.cpp")
 set(OLD_GLOB
+  "C:/msys64/home/Tom/VisualSLAM/test/src/autodiff_reverse.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/main.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/measurementModel.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/plot.cpp"

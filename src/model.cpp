@@ -4,9 +4,6 @@
 
 #include<opencv2/opencv.hpp>
 
-// #include <autodiff/reverse/var.hpp>
-// #include <autodiff/reverse/var/eigen.hpp>
-
 using std::sqrt;
 
 void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f)
@@ -43,7 +40,6 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
     nu = x.block(0,0,6,1);
     f.block(6,0,6,1) = J*nu;
 
-
 }
 
 void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ)
@@ -51,9 +47,8 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
     operator()(x,u,param,f);
     SQ.resize(x.rows(),x.rows());
     SQ.setZero();
-    double position_tune = 0.1;
-    double orientation_tune = 0.1;
-    double landmark_tune = 0;
+    double position_tune = param.position_tune;
+    double orientation_tune = param.orientation_tune;
     SQ.block(0,0,3,3) = position_tune*Eigen::MatrixXd::Identity(3,3);
     SQ.block(3,3,3,3) = orientation_tune*Eigen::MatrixXd::Identity(3,3);
 }
@@ -62,9 +57,10 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
 void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ, Eigen::MatrixXd &dfdx)
 {
     int nx = x.rows();
-    int nj = (nx - 12)/6;
+    int n_landmark = param.n_landmark;
+    int nj = (nx - 12)/n_landmark;
     operator()(x,u,param,f,SQ);
-    dfdx.resize(nx,12+6*nj);
+    dfdx.resize(nx,12+n_landmark*nj);
     dfdx.setZero();
 
     Eigen::MatrixXd J(6,6);
@@ -144,7 +140,7 @@ void SlamProcessModel::operator()(const Eigen::VectorXd & x, const Eigen::Vector
 //       since all instantiations of this template are used only in this
 //       compilation unit, its definition can live here
 template <typename Scalar>
-static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & x, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & u, const SlamParameters & param)
+static Scalar arucoLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & x, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & u, const SlamParameters & param)
 {
 
     // Variables
@@ -199,19 +195,33 @@ static Scalar slamLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
 #include <autodiff/forward/dual.hpp>
 #include <autodiff/forward/dual/eigen.hpp>
 
-double SlamLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
+double ArucoLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
 {
     Eigen::Matrix<autodiff::dual2nd,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual2nd>();
     autodiff::dual2nd fdual;
     auto t_start = std::chrono::high_resolution_clock::now();
-    H = autodiff::hessian(slamLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
+    H = autodiff::hessian(arucoLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
     auto t_end = std::chrono::high_resolution_clock::now();
     double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
     std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
     return val(fdual);
 }
 
-double slamLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
+// #include <autodiff/reverse/var.hpp>
+// #include <autodiff/reverse/var/eigen.hpp>
+
+// double ArucoLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
+// {
+//     Eigen::Matrix<autodiff::var,Eigen::Dynamic,1>  xvar = x.cast<autodiff::var>();
+//     Eigen::Matrix<autodiff::var,Eigen::Dynamic,1>  yvar = y.cast<autodiff::var>();
+//     Eigen::Matrix<autodiff::var,Eigen::Dynamic,1>  uvar = u.cast<autodiff::var>();
+//     autodiff::var fvar = slamLogLikelihood(yvar,xvar,uvar,param);
+//     std::cout << " here" << std::endl;
+//     H = hessian(fvar, xvar, g);
+//     return val(fvar);
+// }
+
+double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
 {
 
     // Variables
@@ -375,6 +385,58 @@ double slamLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const Ei
     return cost;
 }
 
+template <typename Scalar>
+static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & x, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & u, const SlamParameters & param)
+{
+
+    // Variables
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJNn(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> eta(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> Thetanj(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> Rnj(3,3);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_pixel(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_pixel(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = 2*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    Scalar cost = 0;
+    eta = x.segment(6,6);
+
+    //For each landmark seen
+    int count = 0;
+    // std::cout << " X : " << x << std::endl;
+    // std::cout << " X : " << x.rows() << std::endl;
+    // std::cout << " y : " << y << std::endl;
+    // std::cout << " y.rows() : " << y.rows() << std::endl;
+    for(int l = 0; l < param.landmarks_seen.size(); l++) {
+        // *** State Predicted Landmark Location *** //
+        // std::cout << " param.landmarks_seen[i]" << param.landmarks_seen[l] << std::endl;
+        rJNn = x.segment(12+param.landmarks_seen[l]*3,3);
+        std::cout << "rJNn " << rJNn << std::endl;
+
+        int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel); // return [2x12]
+        // *** Measurement Point Pixel ***//
+        measurement_pixel = y.segment(2*l,2);
+        if(w2p_flag == 0) {
+            cost += logGaussian(measurement_pixel,state_pixel, SR);
+            count++;
+        } else {
+            std::cout << "outside view cone" << std::endl;
+        }
+    }
+    return cost;
+}
+
+double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
+{
+    Eigen::Matrix<autodiff::dual2nd,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual2nd>();
+    autodiff::dual2nd fdual;
+    auto t_start = std::chrono::high_resolution_clock::now();
+    H = autodiff::hessian(pointLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
+    return val(fdual);
+}
 
 
 

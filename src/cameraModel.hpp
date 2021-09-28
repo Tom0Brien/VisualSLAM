@@ -188,9 +188,8 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     // Check that z is positive
     // assert(z>0);
-    if(z == 0) {
-        u = 0;
-        v = 0;
+    if(z <= 0) {
+        return 1;
     } else {
         u       = x/z;
         v       = y/z;

@@ -1,6 +1,33 @@
 #include "utility.h"
 #include <cassert>
 #include <cmath>
+#include <functional>
+
+// TODO
+// include appropriate boost headers
+#include <boost/math/special_functions/gamma.hpp>
+#include <boost/math/special_functions/erf.hpp>
+
+
+// https://en.wikipedia.org/wiki/Inverse-chi-squared_distribution
+double chi2inv(double p, double nu){
+    assert(p>=0);
+    assert(p<1);
+    // TODO
+    return 2.0*boost::math::gamma_p_inv(nu/2.0,p);
+
+}
+
+double normcdf(double z){
+    // z = (x - mu)/(sigma)
+    // TODO
+    return 0.5*erfc(-z/std::sqrt(2));
+}
+
+
+
+
+
 
 bool compareChar(const char & c1, const char & c2)
 {
@@ -10,6 +37,7 @@ bool compareChar(const char & c1, const char & c2)
         return true;
     return false;
 }
+
 /*
  * Case Insensitive String Comparison
  */
@@ -18,6 +46,9 @@ bool caseInSensStringCompare(const std::string & str1, const std::string &str2)
     return ( (str1.size() == str2.size() ) &&
              std::equal(str1.begin(), str1.end(), str2.begin(), &compareChar) );
 }
+
+
+
 
 std::vector<std::filesystem::path> getFilesWithExtension(std::filesystem::path const & root, std::string const & ext)
 {
@@ -37,7 +68,7 @@ std::vector<std::filesystem::path> getFilesWithExtension(std::filesystem::path c
         }
     }
     std::sort(paths.begin(), paths.end());
-   
+
     return paths;
-}  
+}
 

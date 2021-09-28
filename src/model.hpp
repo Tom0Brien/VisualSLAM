@@ -13,9 +13,10 @@ struct SlamParameters
 {
     CameraParameters camera_param;
     std::vector<int> landmarks_seen;
+    int n_landmark;
+    double position_tune;
+    double orientation_tune;
 };
-
-
 
 struct SlamProcessModel
 {
@@ -32,13 +33,17 @@ struct SlamProcessModel
 //     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & h, Eigen::MatrixXd & SR, Eigen::MatrixXd & dhdx);
 // };
 
-struct SlamLogLikelihood
+struct ArucoLogLikelihood
 {
-    double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param);
-    double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g);
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 };
-struct slamLogLikelihoodAnalytical
+
+struct PointLogLikelihood
+{
+    double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
+};
+
+struct arucoLogLikelihoodAnalytical
 {
    double operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 };
