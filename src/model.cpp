@@ -397,7 +397,7 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn(3,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_pixel(2,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_pixel(2,1);
-    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = 2*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = param.measurement_noise*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
     Scalar cost = 0;
     eta = x.segment(6,6);
 
@@ -407,17 +407,15 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
     // std::cout << " X : " << x.rows() << std::endl;
     // std::cout << " y : " << y << std::endl;
     // std::cout << " y.rows() : " << y.rows() << std::endl;
-    for(int l = 0; l < param.landmarks_seen.size(); l++) {
+    for(int i = 0; i < param.landmarks_seen.size(); i++) {
         // *** State Predicted Landmark Location *** //
-        // std::cout << " param.landmarks_seen[i]" << param.landmarks_seen[l] << std::endl;
-        rJNn = x.segment(12+param.landmarks_seen[l]*3,3);
-        std::cout << "rJNn " << rJNn << std::endl;
-
+        rJNn = x.segment(12+param.landmarks_seen[i]*3,3);
         int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel); // return [2x12]
         // *** Measurement Point Pixel ***//
-        measurement_pixel = y.segment(2*l,2);
+        measurement_pixel = y.segment(2*i,2);
+        using std::log;
         if(w2p_flag == 0) {
-            cost += logGaussian(measurement_pixel,state_pixel, SR);
+            cost += logGaussian(measurement_pixel,state_pixel, SR) -log(state_pixel(0) - 0) -log(-state_pixel(0) + 1080) -log(state_pixel(1) - 0) -log(-state_pixel(1) + 1920);
             count++;
         } else {
             std::cout << "outside view cone" << std::endl;
@@ -426,7 +424,7 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
     return cost;
 }
 
-double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
+double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd & H)
 {
     Eigen::Matrix<autodiff::dual2nd,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual2nd>();
     autodiff::dual2nd fdual;

@@ -16,6 +16,7 @@ struct SlamParameters
     int n_landmark;
     double position_tune;
     double orientation_tune;
+    double measurement_noise;
 };
 
 struct SlamProcessModel
@@ -45,7 +46,7 @@ struct PointLogLikelihood
 
 struct arucoLogLikelihoodAnalytical
 {
-   double operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
+    double operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 };
 
 // double slamLogLikelihoodAnalytical(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);

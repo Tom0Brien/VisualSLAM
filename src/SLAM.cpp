@@ -54,20 +54,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     SlamProcessModel     pm;
 
     //Default
-    std::cout << "scenario" << scenario << std::endl;
-    if(scenario == 1) {
-        std::cout << "Scenario 1" << std::endl;
-        slamparam.position_tune = 0.1;
-        slamparam.orientation_tune = 0.1;
-        slamparam.n_landmark = 6;
-    } else if (scenario == 2){
-        std::cout << "Scenario 2" << std::endl;
-        slamparam.position_tune = 0.05;
-        slamparam.orientation_tune = 0.01;
-        slamparam.n_landmark = 3;
-    }
-    // slamLogLikelihoodAnalytical ll;
-
     //Initialise the states
     int nx, ny;
     nx              = 12; // Camera states
@@ -75,9 +61,11 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     Eigen::VectorXd x0(nx);
     Eigen::VectorXd muEKF(nx);
     Eigen::MatrixXd SEKF(nx, nx);
+    std::cout << "scenario" << scenario << std::endl;
+
     // Initialise filter
     SEKF.fill(0);
-    SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25,0.25,0.25,0.25;
+    SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01,0.01 ,0.01,0.01,0.01,0.01;
     muEKF <<     0, // x dot
                  0, // y dot
                  0, // z dot
@@ -86,13 +74,36 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                  0, // Phi dot
                  0, // x
                  0, // y
-                 -1.8, // z
+                 0, //-1.8, // z
                  -3.14159265359/2, // Phi
                  3.14159265359, // Theta
                  0  ; // Psi
 
+    int max_landmarks;
+    double kappa;
+    double optical_ray_lengh;
+    if(scenario == 1) {
+        std::cout << "Scenario 1" << std::endl;
+        slamparam.position_tune = 0.1;
+        slamparam.orientation_tune = 0.1;
+        slamparam.n_landmark = 6;
+        max_landmarks = 150;
+        kappa = 0.05;
+        SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25;
+    } else if (scenario == 2){
+        std::cout << "Scenario 2" << std::endl;
+        slamparam.position_tune = 0.2;
+        slamparam.orientation_tune = 0.01;
+        slamparam.n_landmark = 3;
+        max_landmarks = 1;
+        optical_ray_lengh = 1;
+        kappa = std::sqrt(3);
+        slamparam.measurement_noise = 5;
+        SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01,0.01 ,0.01,0.01,0.01,0.01;
+    }
+    // slamLogLikelihoodAnalytical ll;
+
     //Initialize the plot states
-    int max_landmarks = 50;
     Eigen::VectorXd muPlot(nx+max_landmarks*6);
     muPlot.setZero();
     muPlot.segment(0,12) = muEKF;
@@ -190,7 +201,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                         muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                         mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                        double kappa = 0.05;
                         for(int k = 0; k < 6; k++){
                             SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                             Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
@@ -225,6 +235,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             }
             case 2:
             {
+                //Time update!
+                timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
                 // points
                 slamparam.landmarks_seen.clear();
                 std::cout << "Scenario 2" << std::endl;
@@ -247,8 +259,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     std::vector<cv::DMatch> match;
                     // check we have landmarks to start with
                     if(landmark_descriptors.rows > 0) {
-                        // for each the descriptors found, compare with our state descriptors
                         matcher.match(landmark_descriptors,descriptors_found.row(i),match);
+                        // for each the descriptors found, compare with our state descriptors
                         std::cout << " CHECHED IF MATCH WAS GOOD" << std::endl;
                     }
                     if(match.size() > 0) {
@@ -315,7 +327,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         isCompatible.push_back(res);
                         int n_measurements = yk.rows();
                         std::cout << "res of individualCompatibility : " << res << std::endl;
-                        if(res && potential_measurments(1,i) > 50 && potential_measurments(1,i) < (1920 - 50) && potential_measurments(0,i) > 50 && potential_measurments(0,i) < (1920 - 50)){
+                        if(res && potential_measurments(0,i) > 250 && potential_measurments(0,i) < (1080 - 250) && potential_measurments(1,i) > 250 && potential_measurments(1,i) < (1920 - 250)){
                             std::cout << "Pixel at [" << potential_measurments(0,i) << "," << potential_measurments(1,i) << " ] in Image B, matches with landmark " << i << "." <<std::endl;
                             yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+2,1));
                             yk.tail(2) = potential_measurments.col(i);
@@ -331,86 +343,109 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
                 // Initialise up to Nmax – N new landmarks from best surplus features
                 for(int i = 0; i < failed_match_idx.size(); i++) {
-                    int max_new_landmarks = max_landmarks + 12 - mup.rows();
+                    int max_new_landmarks = max_landmarks - (mup.rows()-12)/3;
                     if(max_new_landmarks > 0) {
-                        // Add new landmark description to now seen list
-                        int n_states = muEKF.rows();
-                        landmark_descriptors.push_back(descriptors_found.row(failed_match_idx[i]));
-                        //Reize the state and predicted state matrix
-                        SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
-                        Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
-                        muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,1));
-                        mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,1));
-                        double kappa = 0.1;
-                        for(int k = 0; k < 3; k++){
-                            SEKF(SEKF.rows()-3+k,SEKF.rows()-3+k) = kappa;
-                            Sp(Sp.rows()-3+k,Sp.rows()-3+k) = kappa;
-                        }
-
                         // Add pixel measurements to vector y
                         int n_measurements = yk.rows();
-                        yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+2,1));
                         Eigen::MatrixXd pixel(2,1);
                         std::cout << "keypoints_found.size() " << keypoints_found.size() << std::endl;
                         pixel << keypoints_found[failed_match_idx[i]].pt.x, keypoints_found[failed_match_idx[i]].pt.y;
-                        yk.tail(2) = pixel;
+                        std::cout << "pixel : " << pixel << std::endl;
 
-                        // Add initial good guess
+                        if(pixel(1,0) > 250 && pixel(1,0) < (1080 - 250) && pixel(0,0) > 250 && pixel(0,0) < (1920 - 250)) {
+                            yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+2,1));
+                            yk.tail(2) = pixel;
 
-                        //YUCK
-                        std::vector<cv::Point2f> pixels;
-                        std::vector<cv::Point2f> undistorted_pixels;
-                        cv::Point2f pixel_to_undistort;
-                        std::vector<cv::Point2f> pixels_to_undistort;
-                        pixel_to_undistort.x = pixel(0);
-                        pixel_to_undistort.y = pixel(1);
-                        pixels_to_undistort.push_back(pixel_to_undistort);
+                            // Add new landmark description to now seen list
+                            int n_states = muEKF.rows();
+                            landmark_descriptors.push_back(descriptors_found.row(failed_match_idx[i]));
+                            //Reize the state and predicted state matrix
+                            SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
+                            Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
+                            muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,1));
+                            mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,1));
+                            for(int k = 0; k < 3; k++){
+                                SEKF(SEKF.rows()-3+k,SEKF.rows()-3+k) = kappa;
+                                Sp(Sp.rows()-3+k,Sp.rows()-3+k) = kappa;
+                            }
+                            // Add initial good guess
+                            //YUCK
+                            std::vector<cv::Point2f> pixels;
+                            std::vector<cv::Point2f> undistorted_pixels;
+                            cv::Point2f pixel_to_undistort;
+                            std::vector<cv::Point2f> pixels_to_undistort;
+                            pixel_to_undistort.x = pixel(0);
+                            pixel_to_undistort.y = pixel(1);
+                            pixels_to_undistort.push_back(pixel_to_undistort);
 
-                        std::cout << "pixel : " << pixel(0) << "," << pixel(1) << std::endl;
+                            std::cout << "pixel : " << pixel(0) << "," << pixel(1) << std::endl;
 
-                        cv::undistortPoints(pixels_to_undistort, undistorted_pixels, camera_param.Kc, camera_param.distCoeffs);
-                        std::vector<cv::Point3f> homogeneous_pixels;
-                        cv::convertPointsHomogeneous(undistorted_pixels,homogeneous_pixels);
+                            cv::undistortPoints(pixels_to_undistort, undistorted_pixels, camera_param.Kc, camera_param.distCoeffs);
+                            std::vector<cv::Point3f> homogeneous_pixels;
+                            cv::convertPointsHomogeneous(undistorted_pixels,homogeneous_pixels);
 
-                        // optical_ray = optical_ray/optical_ray.norm();
-                        // std::cout << "optical_ray before back-project : " << optical_ray << std::endl;
+                            // optical_ray = optical_ray/optical_ray.norm();
+                            // std::cout << "optical_ray before back-project : " << optical_ray << std::endl;
+                            Eigen::MatrixXd K(3,3);
+                            cv::cv2eigen(camera_param.Kc, K);
+                            std::cout << "K : " << K << std::endl;
+                            Eigen::MatrixXd inverse_camera_matrix(3,3);
+                            inverse_camera_matrix << 1/K(0,0), 0, -K(0,2)/K(0,0),0,1/K(1,1),-K(1,2)/K(1,1),0,0,1;
+                            std::cout << "inverse_camera_matrix : " << inverse_camera_matrix << std::endl;
+                            // Back-project the pixel into optical ray
+                            Eigen::VectorXd optical_ray(3,1);
+                            optical_ray << pixel(0),pixel(1),1;
+                            optical_ray = inverse_camera_matrix*optical_ray;
+                            std::cout << "optical_ray : " << optical_ray << std::endl;
+                            std::cout << "optical_ray.norm() : " << optical_ray.norm() << std::endl;
 
-                        Eigen::MatrixXd K(3,3);
-                        cv::cv2eigen(camera_param.Kc, K);
-                        std::cout << "K : " << K << std::endl;
-                        Eigen::MatrixXd inverse_camera_matrix(3,3);
-                        inverse_camera_matrix << 1/K(0,0), 0, -K(0,2)/K(0,0),0,1/K(1,1),-K(1,2)/K(1,1),0,0,1;
-                        std::cout << "inverse_camera_matrix : " << inverse_camera_matrix << std::endl;
-                        // Back-project the pixel into optical ray
-                        Eigen::VectorXd optical_ray(3,1);
-                        optical_ray << pixel(0),pixel(1),1;
-                        optical_ray = inverse_camera_matrix*optical_ray;
-                        std::cout << "optical_ray : " << optical_ray << std::endl;
-                        std::cout << "optical_ray.norm() : " << optical_ray.norm() << std::endl;
+                            //scale it by 2
+                            optical_ray = optical_ray_lengh*optical_ray;
+                            Thetanc = mup.segment(9,3);
+                            rpy2rot(Thetanc, Rnc);
+                            Eigen::VectorXd point(3,1);
+                            point = mup.segment(6,3) + Rnc*optical_ray;
+                            mup.tail(3) << point;
 
-                        //scale it by 2
-                        optical_ray = 4*optical_ray;
-
-                        std::cout << "mup " << mup << std::endl;
-                        Thetanc = mup.segment(9,3);
-                        rpy2rot(Thetanc, Rnc);
-                        Eigen::VectorXd point(3,1);
-                        point = mup.segment(6,3) + Rnc*optical_ray;
-                        mup.tail(3) << point;
-
-                        std::cout << " point in world : " << point << std::endl;
-
-                        // Add index j to landmark seen vector
-                        slamparam.landmarks_seen.push_back((n_states-nx)/3);
-                        std::cout << " NEW LANDMARK : " << (n_states-nx)/3 << std::endl;
+                            std::cout << " point in world : " << point << std::endl;
+                            std::cout << " mup: " << mup << std::endl;
+                            // Add index j to landmark seen vector
+                            slamparam.landmarks_seen.push_back((mup.rows()-12)/3 - 1);
+                            std::cout << " NEW LANDMARK : " << (mup.rows()-12)/3 - 1 << std::endl;
+                        }
                     }
 
                 }
 
+                for(int i = 0; i < slamparam.landmarks_seen.size(); i++) {
+                    std::cout << " slamparam.landmarks_seen[i] : " << slamparam.landmarks_seen[i] << std::endl;
+                }
+
+                // //TESTING
+                std::cout << " BEFORE MEASUREMENT UPDATE: " << std::endl;
+                std::cout << "frame no. : " << count << std::endl;
+                std::cout << "mup : " << mup << std::endl;
+                std::cout << "Sp : " << Sp << std::endl;
+                muPlot.segment(0,mup.rows()) = mup;
+                SPlot.block(0,0,Sp.rows(),Sp.rows()) = Sp;
+                updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
+                // -------------------------
+                // Attach interactor for playing with the 3d interface
+                // -------------------------
+                vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+                vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+                threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+                threeDimInteractor->SetRenderWindow(handles.renderWindow);
+                threeDimInteractor->Initialize();
+                threeDimInteractor->Start();
+                initPlotStates(muPlot, SPlot, param, handles,slamparam);
+
                 // Measurement update
                 PointLogLikelihood point_ll;
-                std::cout << "frame no. : " << count << std::endl;
+                std::cout << " AFTER MEASUREMENT UPDATE: " << std::endl;
                 measurementUpdateIEKF(mup, Sp, u, yk, point_ll, slamparam, muf, Sf);
+                std::cout << "muf : " << mup << std::endl;
+                std::cout << "Sf : " << Sp << std::endl;
                 muEKF               = muf;
                 SEKF                = Sf;
                 // Remove bad landmarks
@@ -442,6 +477,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         //**********  Plotting **********//
         muPlot.segment(0,muEKF.rows()) = muEKF;
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
+        std::cout << "HERE HERE HERE" << std::endl;
         if (interactive == 1) {
             updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
             if(count == no_frames) {
@@ -486,7 +522,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             video.write(video_frame);
         }
 
-        if( count % 3000 == 0) {
+        if( count % 2000 == 0) {
             video.release();
             return;
         }

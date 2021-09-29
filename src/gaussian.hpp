@@ -439,6 +439,7 @@ struct CostJointDensity
     {
         Eigen::VectorXd logpriorGrad(x.size());
         Eigen::MatrixXd logpriorHess(x.size(),x.size());
+
         double logprior = logGaussian(x, mu, S, logpriorGrad, logpriorHess);
 
         Eigen::VectorXd loglikGrad(x.size());
@@ -476,8 +477,10 @@ void measurementUpdateIEKF(
     Eigen::MatrixXd Q(mux.size(),mux.size());
     Eigen::VectorXd v(mux.size());
     Eigen::VectorXd g(mux.size());
-    constexpr int verbosity = 1; // 0:none, 1:dots, 2:summary, 3:iter
+    constexpr int verbosity = 3; // 0:none, 1:dots, 2:summary, 3:iter
     muxGy = mux; // Start optimisation at prior mean
+
+    std::cout << "muxGy" << muxGy << std::endl;
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
 
     // std::cout << "v" << v << std::endl;
