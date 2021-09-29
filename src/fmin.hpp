@@ -23,8 +23,6 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
     typedef Eigen::VectorXd Vector;
     typedef Eigen::MatrixXd Matrix;
 
-    std::cout << "fmin " << std::endl;
-
     assert(x.cols() == 1);
     g.resize(x.size());
     Q.resize(x.size(), x.size());
@@ -38,13 +36,14 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
     Matrix Hn(x.size(), x.size());
 
     // Evaluate initial cost, gradient and Hessian
+    std::cout << "HERE 1" << std::endl;
     Scalar f = costFunc(x, g, H);
+    std::cout << "HERE 2" << std::endl;
 
     // Eigendecomposition of initial Hessian
     Eigen::SelfAdjointEigenSolver<Matrix> eigenH(H);
     v = eigenH.eigenvalues();
     Q = eigenH.eigenvectors();
-
     Scalar Delta = 1e0;     // Initial trust-region radius
 
     const int maxIterations = 5000;
@@ -71,8 +70,8 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
 
         // Evaluate cost, gradient and Hessian for trial step
         xn = x + p;
-        Scalar fn = costFunc(xn, gn, Hn);
 
+        Scalar fn = costFunc(xn, gn, Hn);
         Scalar dm = -pg - 0.5*p.dot(H*p); // Predicted reduction f - fp, where fp = f + p'*g + 0.5*p'*H*p
         Scalar rho = (f - fn)/dm; // Actual reduction divided by predicted reduction
 
