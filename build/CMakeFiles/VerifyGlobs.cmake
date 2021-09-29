@@ -6,7 +6,6 @@ cmake_policy(SET CMP0009 NEW)
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "C:/msys64/home/Tom/VisualSLAM/src/*.cpp")
 set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/src/SLAM.cpp"
-  "C:/msys64/home/Tom/VisualSLAM/src/SLAMold.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/calibrate.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/cameraModel.cpp"
   "C:/msys64/home/Tom/VisualSLAM/src/dataAssociation.cpp"
@@ -60,6 +59,7 @@ endif()
 file(GLOB NEW_GLOB LIST_DIRECTORIES true "C:/msys64/home/Tom/VisualSLAM/test/src/*.cpp")
 set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/test/src/autodiff_reverse.cpp"
+  "C:/msys64/home/Tom/VisualSLAM/test/src/deleteLandmarks.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/main.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/measurementModel.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/plot.cpp"

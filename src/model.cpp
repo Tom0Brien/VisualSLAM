@@ -403,7 +403,10 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
 
     //For each landmark seen
     int count = 0;
-    // std::cout << " X : " << x << std::endl;
+    if(x.hasNaN()){
+        std::cout << " X has nans: " << x << std::endl;
+        assert(0);
+    }
     // std::cout << " X : " << x.rows() << std::endl;
     // std::cout << " y : " << y << std::endl;
     // std::cout << " y.rows() : " << y.rows() << std::endl;
@@ -415,10 +418,15 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
         measurement_pixel = y.segment(2*i,2);
         using std::log;
         if(w2p_flag == 0) {
-            cost += logGaussian(measurement_pixel,state_pixel, SR) -log(state_pixel(0) - 0) -log(-state_pixel(0) + 1080) -log(state_pixel(1) - 0) -log(-state_pixel(1) + 1920);
+            double thresh = 25;
+            cost += logGaussian(measurement_pixel,state_pixel, SR);
+            //  -log(state_pixel(0) - thresh) -log(-state_pixel(0) + (1920-thresh)) -log(state_pixel(1) - thresh) -log(-state_pixel(1) + (1080-25));
             count++;
+            // std::cout << "passed w2p flag for landmark :) j= " << param.landmarks_seen[i] << std::endl;
         } else {
-            std::cout << "outside view cone" << std::endl;
+            // std::cout << "outside view cone" << std::endl;
+            // std::cout << "failed w2p flag for landmark :( j= " << param.landmarks_seen[i] << std::endl;
+            // assert(0);
         }
     }
     return cost;

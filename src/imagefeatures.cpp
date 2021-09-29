@@ -92,6 +92,10 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat 
     orb->compute(img, keypoints, descriptors);
     //Draw keypoints on output image
     drawKeypoints(img, keypoints, imgout, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    for(int i = 0; i < keypoints.size(); i++){
+        cv::circle(img, cv::Point(keypoints[i].pt.x,keypoints[i].pt.y), 10, cv::Scalar(75, 0, 0), 5, 8, 0);
+    }
+    imgout = img;
     return 0;
 
 }

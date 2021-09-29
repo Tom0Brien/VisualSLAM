@@ -88,8 +88,8 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
 
     if (uQCc(2)<cAngle){
         // Pixel is not within the cone of the camera
-        std::cout << "PIXEL NOT WITHIN CONE OF CAMERA?" << std::endl;
-        std::cout << "PIXEL rPCc" << rPCc << std::endl;
+        // std::cout << "PIXEL NOT WITHIN CONE OF CAMERA?" << std::endl;
+        // std::cout << "PIXEL rPCc" << rPCc << std::endl;
         return 1;
     }
 
@@ -196,7 +196,7 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
     // Check that z is positive
     // assert(z>0);
     if(z <= 0) {
-        std::cout << "PIXEL WORLD CORDS NEGATIVE?!?" << std::endl;
+        // std::cout << "PIXEL WORLD CORDS NEGATIVE?!?" << std::endl;
         return 1;
     } else {
         u       = x/z;
@@ -223,11 +223,11 @@ int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Ei
     bool isInWidth  = 0 <= rQOi(0) && rQOi(0) <= param.imageSize.width-1;
     bool isInHeight = 0 <= rQOi(1) && rQOi(1) <= param.imageSize.height-1;
     if (!(isInWidth && isInHeight)){
-        std::cout << "PIXEL OFF SCREEN SHEEEIT " << std::endl;
-        std::cout << "rQOi in w2p: " << rQOi << std::endl;
-        std::cout << "param.imageSize.width: " << param.imageSize.width << std::endl;
-        std::cout << "param.imageSize.height: " << param.imageSize.height << std::endl;
-        // Pixel is not within the image
+        // std::cout << "PIXEL OFF SCREEN SHEEEIT " << std::endl;
+        // std::cout << "rQOi in w2p: " << rQOi << std::endl;
+        // std::cout << "param.imageSize.width: " << param.imageSize.width << std::endl;
+        // std::cout << "param.imageSize.height: " << param.imageSize.height << std::endl;
+        // // Pixel is not within the image
         return 2;
     }
 

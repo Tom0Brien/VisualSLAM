@@ -69,11 +69,9 @@ void MeasurementPointLandmarkBundle::operator()(const Eigen::VectorXd & x, const
         std::cout << "J_temp.rows()" << J_temp.rows() << std::endl;
         std::cout << "J_temp.cols()" << J_temp.cols() << std::endl;
         C.derived().block(j*2,0,2,nCameraStates+nLandmarkStates) = J_temp;
-        std::cout << "FUCK FUCK FUCK 3" << std::endl;
     }
 
     SR.derived().resize(nLandmarks*2,nLandmarks*2);
     SR.setIdentity();
     SR = 0.01 * SR;
-
 }

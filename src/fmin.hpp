@@ -23,6 +23,8 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
     typedef Eigen::VectorXd Vector;
     typedef Eigen::MatrixXd Matrix;
 
+    std::cout << "fmin " << std::endl;
+
     assert(x.cols() == 1);
     g.resize(x.size());
     Q.resize(x.size(), x.size());

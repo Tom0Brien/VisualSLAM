@@ -441,10 +441,29 @@ struct CostJointDensity
         Eigen::MatrixXd logpriorHess(x.size(),x.size());
 
         double logprior = logGaussian(x, mu, S, logpriorGrad, logpriorHess);
+        if(mu.hasNaN() || S.hasNaN() || logpriorGrad.hasNaN() || logpriorHess.hasNaN()){
+            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
+            std::cout << "NaNs encountered in mu. mu = \n" << mu << std::endl;
+            std::cout << "NaNs encountered in mu. mu.rows() = \n" << mu.rows() << std::endl;
+            std::cout << "NaNs encountered in mu. mu.cols() = \n" << mu.cols() << std::endl;
+            std::cout << "NaNs encountered in S. S = \n" << S << std::endl;
+            std::cout << "NaNs encountered in S. S.rows() = \n" << S.rows() << std::endl;
+            std::cout << "NaNs encountered in S. S.cols() = \n" << S.cols() << std::endl;
+            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
+            assert(0);
+        }
 
         Eigen::VectorXd loglikGrad(x.size());
         Eigen::MatrixXd loglikHess(x.size(),x.size());
         double loglik = logLikelihood(y, x, u, param, loglikGrad, loglikHess);
+
+        if(loglikGrad.hasNaN() || loglikHess.hasNaN()){
+            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
+            std::cout << "NaNs encountered in loglikGrad. loglikGrad = \n" << loglikGrad << std::endl;
+            std::cout << "NaNs encountered in loglikHess. loglikHess.rows() = \n" << loglikHess.rows() << std::endl;
+            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
+            assert(0);
+        }
 
         g = -(logpriorGrad + loglikGrad);
         H = -(logpriorHess + loglikHess);
@@ -480,11 +499,7 @@ void measurementUpdateIEKF(
     constexpr int verbosity = 3; // 0:none, 1:dots, 2:summary, 3:iter
     muxGy = mux; // Start optimisation at prior mean
 
-    std::cout << "muxGy" << muxGy << std::endl;
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
-
-    // std::cout << "v" << v << std::endl;
-    // std::cout << "v.rows()" << v.rows() << std::endl;
     // std::cout << "Q" << Q << std::endl;
     // std::cout << "Q.rows()" << Q.rows() << std::endl;
 
@@ -493,16 +508,33 @@ void measurementUpdateIEKF(
     // S = triu(qr(diag(1./realsqrt(v))*Q.'))
     if(v.hasNaN()) {
         std::cout << "v has nans" << std::endl;
+        assert(0);
     }
 
     if(Q.hasNaN()) {
         std::cout << "Q has nans" << std::endl;
+        assert(0);
     }
 
     SxxGy = v.cwiseSqrt().cwiseInverse().asDiagonal()*Q.transpose();
+    // std::cout << "SxxGy before = \n" << SxxGy << std::endl;
     Eigen::HouseholderQR<Eigen::Ref<Eigen::MatrixXd>> qr(SxxGy); // decomposition in place
     SxxGy = qr.matrixQR().triangularView<Eigen::Upper>();
 
+
+    if(SxxGy.hasNaN() ||  muxGy.hasNaN() || g.hasNaN() || Q.hasNaN() || v.hasNaN() || v.hasNaN()){
+            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
+            std::cout << "NaNs encountered in muxGy. muxGy = \n" << muxGy << std::endl;
+            std::cout << "NaNs encountered in SxxGy. SxxGy = \n" << SxxGy << std::endl;
+            std::cout << "NaNs encountered in g. g = \n" << g << std::endl;
+            std::cout << "NaNs encountered in Q. Q = \n" << Q << std::endl;
+            std::cout << "NaNs encountered in v. v = \n" << v << std::endl;
+            std::cout << "NaNs encountered in g. g.rows() = \n" << g.rows() << std::endl;
+            std::cout << "NaNs encountered in Q. Q.rows() = \n" << Q.rows() << std::endl;
+            std::cout << "NaNs encountered in v. v.rows() = \n" << v.rows() << std::endl;
+            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
+            assert(0);
+    }
 }
 
 
