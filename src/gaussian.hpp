@@ -450,7 +450,7 @@ struct CostJointDensity
             std::cout << "NaNs encountered in S. S.rows() = \n" << S.rows() << std::endl;
             std::cout << "NaNs encountered in S. S.cols() = \n" << S.cols() << std::endl;
             std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            assert(0);
+            // assert(0);
         }
 
         Eigen::VectorXd loglikGrad(x.size());
@@ -462,7 +462,7 @@ struct CostJointDensity
             std::cout << "NaNs encountered in loglikGrad. loglikGrad = \n" << loglikGrad << std::endl;
             std::cout << "NaNs encountered in loglikHess. loglikHess.rows() = \n" << loglikHess.rows() << std::endl;
             std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            assert(0);
+            // assert(0);
         }
 
         g = -(logpriorGrad + loglikGrad);
@@ -496,7 +496,7 @@ void measurementUpdateIEKF(
     Eigen::MatrixXd Q(mux.size(),mux.size());
     Eigen::VectorXd v(mux.size());
     Eigen::VectorXd g(mux.size());
-    constexpr int verbosity = 3; // 0:none, 1:dots, 2:summary, 3:iter
+    constexpr int verbosity = 1; // 0:none, 1:dots, 2:summary, 3:iter
     muxGy = mux; // Start optimisation at prior mean
 
     fminNewtonTrustEig(costFunc, muxGy, g, Q, v, verbosity);
@@ -508,12 +508,12 @@ void measurementUpdateIEKF(
     // S = triu(qr(diag(1./realsqrt(v))*Q.'))
     if(v.hasNaN()) {
         std::cout << "v has nans" << std::endl;
-        assert(0);
+        // assert(0);
     }
 
     if(Q.hasNaN()) {
         std::cout << "Q has nans" << std::endl;
-        assert(0);
+        // assert(0);
     }
 
     SxxGy = v.cwiseSqrt().cwiseInverse().asDiagonal()*Q.transpose();
@@ -533,7 +533,7 @@ void measurementUpdateIEKF(
             std::cout << "NaNs encountered in Q. Q.rows() = \n" << Q.rows() << std::endl;
             std::cout << "NaNs encountered in v. v.rows() = \n" << v.rows() << std::endl;
             std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            assert(0);
+            // assert(0);
     }
 }
 

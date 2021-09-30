@@ -203,7 +203,7 @@ double ArucoLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Ve
     H = autodiff::hessian(arucoLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
     auto t_end = std::chrono::high_resolution_clock::now();
     double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-    std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
+    // std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
     return val(fdual);
 }
 
@@ -420,13 +420,6 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
         if(w2p_flag == 0) {
             double thresh = 25;
             cost += logGaussian(measurement_pixel,state_pixel, SR);
-            //  -log(state_pixel(0) - thresh) -log(-state_pixel(0) + (1920-thresh)) -log(state_pixel(1) - thresh) -log(-state_pixel(1) + (1080-25));
-            count++;
-            // std::cout << "passed w2p flag for landmark :) j= " << param.landmarks_seen[i] << std::endl;
-        } else {
-            // std::cout << "outside view cone" << std::endl;
-            // std::cout << "failed w2p flag for landmark :( j= " << param.landmarks_seen[i] << std::endl;
-            // assert(0);
         }
     }
     return cost;
@@ -440,7 +433,7 @@ double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Ve
     H = autodiff::hessian(pointLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
     auto t_end = std::chrono::high_resolution_clock::now();
     double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
-    std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
+    // std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
     return val(fdual);
 }
 

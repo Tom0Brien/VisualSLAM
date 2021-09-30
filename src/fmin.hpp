@@ -36,9 +36,7 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
     Matrix Hn(x.size(), x.size());
 
     // Evaluate initial cost, gradient and Hessian
-    std::cout << "HERE 1" << std::endl;
     Scalar f = costFunc(x, g, H);
-    std::cout << "HERE 2" << std::endl;
 
     // Eigendecomposition of initial Hessian
     Eigen::SelfAdjointEigenSolver<Matrix> eigenH(H);

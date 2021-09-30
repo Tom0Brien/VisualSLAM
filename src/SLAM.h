@@ -38,7 +38,7 @@
 void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, const std::filesystem::path &outputDirectory);
 cv::Mat getPlotFrame(const PlotHandles &handles);
 void plot(cv::Mat & imgout, Eigen::MatrixXd & muPlot, Eigen::MatrixXd & SPlot, SlamParameters & slamparam, CameraParameters & param, int interactive, cv::VideoWriter & video);
-bool pixelDistance(std::vector<cv::KeyPoint> landmark_keypoints, cv::KeyPoint keypoint);
+bool pixelDistance(std::vector<cv::KeyPoint> landmark_keypoints, cv::KeyPoint keypoint, double pixel_distance_thresh);
 void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector<cv::KeyPoint> & landmark_keypoints, cv::Mat & landmark_descriptors,std::vector<int> & landmarks_seen, std::vector<int> & bad_landmark, int j);
 void removeRow(Eigen::VectorXd & vector, unsigned int rowToRemove);
 void removeColumn(Eigen::MatrixXd & matrix, unsigned int colToRemove);

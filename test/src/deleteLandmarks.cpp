@@ -1,104 +1,102 @@
-// // #define CATCH_CONFIG_ENABLE_BENCHMARKING
-// // #define CATCH_CONFIG_COLOUR_ANSI
-// #include <catch2/catch.hpp>
+// #define CATCH_CONFIG_ENABLE_BENCHMARKING
+// #define CATCH_CONFIG_COLOUR_ANSI
+#include <catch2/catch.hpp>
 
-// #include "../../src/model.hpp"
-// #include "../../src/settings.h"
-// #include "../../src/cameraModel.hpp"
-// #include "../../src/SLAM.h"
+#include "../../src/settings.h"
+#include "../../src/cameraModel.hpp"
+#include "../../src/SLAM.h"
 
-// SCENARIO("measurement model test"){
-//     WHEN("Calling analytical and autodiff measurment model"){
-//         SlamLogLikelihood ll;
+SCENARIO("delete landmark test"){
 
-//         // 1 tag measurement
-//         Eigen::VectorXd y(8,1);
-//         // 1 landmark
-//         Eigen::VectorXd x(12+6);
+    WHEN("Calling removeBadLandmark"){
 
-//         x <<        0, // x dot
-//                     0, // y dot
-//                     0, // z dot
-//                     0, // Psi dot
-//                     0, // Theta dot
-//                     0, // Phi dot
-//                     0, // x
-//                     0, // y
-//                     -1.8, // z
-//                     -3.14159265359/2, // Psi
-//                     3.14159265359, // Theta
-//                     0,// Phi
-//                     0,
-//                     1,
-//                     -1.8,
-//                     0,
-//                     0,
-//                     0;
+        // 1 tag measurement
+        Eigen::VectorXd y(8,1);
+        // 2 landmarks
+        Eigen::VectorXd mu(12+6);
 
-//         std::cout << "x : " << x << std::endl;
+        mu <<       1, // x dot
+                    2, // y dot
+                    3, // z dot
+                    4, // Psi dot
+                    5, // Theta dot
+                    6, // Phi dot
+                    7, // x
+                    8, // y
+                    9, // z
+                    10, // Psi
+                    11, // Theta
+                    12,// Phi
+                    13,
+                    14,
+                    15,
+                    16,
+                    17,
+                    18;
 
-//         y <<    1463,
-//                 481,
-//                 1386,
-//                 480,
-//                 1389,
-//                 402,
-//                 1467,
-//                 402;
+        Eigen::MatrixXd S(12+6,12+6);
+        S.setZero();
+        S.diagonal() <<         1, // x dot
+                                2, // y dot
+                                3, // z dot
+                                4, // Psi dot
+                                5, // Theta dot
+                                6, // Phi dot
+                                7, // x
+                                8, // y
+                                9, // z
+                                10, // Psi
+                                11, // Theta
+                                12,// Phi
+                                13,
+                                14,
+                                15,
+                                16,
+                                17,
+                                18;
+        //Scenario 2
 
-//         // std::cout << "y : " << y << std::endl;
+        std::vector<cv::KeyPoint> landmark_keypoints;
+        cv::KeyPoint keypoint;
+        landmark_keypoints.push_back(keypoint);
+        landmark_keypoints.push_back(keypoint);
 
-//         Eigen::VectorXd u;
-//         SlamParameters slamparam;
-//         Eigen::VectorXd g;
-//         Eigen::MatrixXd H;
+        std::vector<int> landmarks_seen;
+        landmarks_seen.push_back(0);
+        landmarks_seen.push_back(1);
 
-//         // 1 landmark "seen"
-//         slamparam.landmarks_seen.push_back(0);
+        std::vector<int> bad_landmark;
+        bad_landmark.push_back(1);
+        bad_landmark.push_back(2);
 
-//         CameraParameters param;
-//         std::filesystem::path calibrationFilePath = "data/camera.xml";
-//         importCalibrationData(calibrationFilePath, param);
-//         slamparam.camera_param = param;
+        cv::Mat landmark_descriptors = (cv::Mat_<double>(2,32) << 0, -1, 0, -1, 5, -1, 0, -1, 0, 0, -1, 0, -1, 5, -1, 0, -1, 0, 0, -1, 0, -1, 5, -1, 0, -1, 0, 0, 0, 0, 0, 0,0, -1, 0, -1, 5, -1, 0, -1, 0, 0, -1, 0, -1, 5, -1, 0, -1, 0, 0, -1, 0, -1, 5, -1, 0, -1, 0, 0, 0, 0, 0, 0);
 
+        std::cout << "mu before : " << mu << std::endl;
+        std::cout << "S before : " << S << std::endl;
 
-//         // Call log likelihood
-//         double cost_auto = ll(y, x, u, slamparam, g, H);
+        removeBadLandmarks(mu, S, landmark_keypoints, landmark_descriptors,landmarks_seen,bad_landmark,0);
 
+        std::cout << "mu after : " << mu << std::endl;
+        std::cout << "S after : " << S << std::endl;
 
-//         REQUIRE(g.rows() == x.rows());
-//         REQUIRE(g.cols() == 1);
+        for(int i = 0; i < landmarks_seen.size(); i++) {
+            std::cout << "landmarks_seen: " << landmarks_seen[i] << std::endl;
 
+        }
 
-//         //Analytical
+        THEN("Dimensions of everything correct") {
+            CHECK(bad_landmark.size() == 1);
+            CHECK(landmark_descriptors.rows == 1);
+            CHECK(landmark_keypoints.size() == 1);
+            CHECK(mu.rows() == 15);
+            CHECK(mu.cols() == 1);
+            CHECK(S.rows() == 15);
+            CHECK(S.cols() == 15);
+            CHECK(landmark_keypoints.size() == 1);
+            CHECK(landmarks_seen.size() == 1);
 
-//         Eigen::VectorXd g_analytical;
-//         Eigen::MatrixXd H_analytical;
-
-//         slamLogLikelihoodAnalytical ll_analytical;
-
-//         double cost_ana = ll_analytical(y, x, u, slamparam, g_analytical, H_analytical);
-//         std::cout << "cost_auto : " << cost_auto << std::endl;
-//         std::cout << "cost_ana : " << cost_ana << std::endl;
-
-//         std::cout << "Analytical Jacobian :   " << std::endl << g_analytical << std::endl;
-//         std::cout << "Jacobian.rows()     :   " << g_analytical.rows() << std::endl;
-//         std::cout << "Jacobian.cols()     :   " << g_analytical.cols() << std::endl;
-
-//         std::cout << "autodiff g.rows()   : " << g.rows() << std::endl;
-//         std::cout << "autodiff g.cols()   :   " << g.cols() << std::endl;
-//         std::cout << "autodiff g          :   " << std::endl <<  g << std::endl;
-
-
-//         std::cout << "Analytical H          :   " << H_analytical << std::endl;
-//         std::cout << "autodiff H          :   " << H << std::endl;
-
-//         THEN("Jacobians the same") {
-//             REQUIRE(g.rows() == x.rows());
-//             REQUIRE(g.cols() == 1);
-
-//         }
-//     }
-// }
+        }
+    }
+}
 
 

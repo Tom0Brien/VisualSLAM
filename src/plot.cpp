@@ -330,8 +330,8 @@ void frustumPlot_init(FrustumPlot & fp, const CameraParameters & param){
     }
 
     Eigen::MatrixXd rZCc(3,4), nrZCc;
-    rZCc.fill(1);
-    rZCc.topRows(2)     = rZCc2;
+    rZCc.fill(1); //x,y,1
+    rZCc.topRows(2)     = rZCc2; //-0.2,0.1,1
     nrZCc               = rZCc.colwise().squaredNorm().cwiseSqrt();
 
     for (int i = 0; i < rZCc.cols(); ++i)

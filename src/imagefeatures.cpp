@@ -12,7 +12,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include <opencv2/core/eigen.hpp>
-
+#include <stdlib.h>
 
 
 std::vector<Feature> detected_features;
@@ -66,12 +66,6 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     return 0;
 }
 int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat & descriptors, std::vector<cv::KeyPoint> & keypoints){
-
-    std::cout << "Using ORB feature detector" << std::endl;
-    std::cout << "Width : " << img.cols << std::endl;
-    std::cout << "Height: " << img.rows << std::endl;
-    std::cout << "Features requested: " << maxNumFeatures << std::endl;
-
     //Create orb detector
     cv::Ptr<cv::ORB> orb = cv::ORB::create(
         maxNumFeatures,         // nfeatures
@@ -84,16 +78,14 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat 
         31,                     // patchSize
         20                      // fastThreshold
     );
-
-
     // Detect the position of the Oriented FAST corner point.
     orb->detect(img, keypoints);
     // Calculate the BRIEF descriptor according to the position of the corner point
     orb->compute(img, keypoints, descriptors);
     //Draw keypoints on output image
-    drawKeypoints(img, keypoints, imgout, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    // drawKeypoints(img, keypoints, imgout, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
     for(int i = 0; i < keypoints.size(); i++){
-        cv::circle(img, cv::Point(keypoints[i].pt.x,keypoints[i].pt.y), 10, cv::Scalar(75, 0, 0), 5, 8, 0);
+        cv::circle(img, cv::Point(keypoints[i].pt.x,keypoints[i].pt.y), 2, cv::Scalar(rand() % 255, rand() % 255, rand() % 255), 1, 8, 0);
     }
     imgout = img;
     return 0;
