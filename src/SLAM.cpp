@@ -94,12 +94,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         -3.14159265359/2, // Phi
                         3.14159265359, // Theta
                         0  ; // Psi
-        SEKF.diagonal() << 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01, 0.01, 0.01, 0.05, 0.05, 0.05;
+        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
-        slamparam.position_tune = 0.2;
-        slamparam.orientation_tune = 0.2;
+        slamparam.position_tune = 0.1;
+        slamparam.orientation_tune = 0.1;
         // MEASUREMENT MODEL
         slamparam.measurement_noise = 1;
         // Map tuning
@@ -109,12 +109,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         feature_thresh = 0.0002;
         pixel_distance_thresh = 100;
         // Initilizing landmarks
-        optical_ray_length = 10;
-        kappa = 3;
+        optical_ray_length = 7.5;
+        kappa = 1;
 
         slamparam.n_landmark = 3;
         // Initial conditions
-        SEKF.diagonal() << 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05;
+        SEKF.diagonal() << 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.01, 0.01, 0.01, 0.05, 0.05, 0.05;
         muEKF <<        0, // x dot
                         0, // y dot
                         0, // z dot
@@ -151,9 +151,17 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     std::vector<int> marker_ids;
 
     //Scenario 2
-    cv::Mat landmark_descriptors;
-    std::vector<cv::KeyPoint> landmark_keypoints;
-    std::vector<int> bad_landmark;
+    std::vector<Landmark> landmarks;
+
+    // ------------------------------------------------------------------------
+    // Generate chi2LUT
+    // ------------------------------------------------------------------------
+    double nstd     = 3;
+    std::vector<double> chi2LUT;
+    double c = 2*normcdf(3) - 1;
+    for(int i=0; i < max_landmarks; i++) {
+            chi2LUT.push_back(chi2inv(c, (i+1)*2));
+    }
 
     cv::BFMatcher matcher = cv::BFMatcher(cv::NORM_HAMMING);
 
@@ -273,6 +281,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
                 // Identify landmarks with matching features
                 std::vector<cv::DMatch> matches;
+
+                cv::Mat landmark_descriptors;
+                combineDescriptors(landmark_descriptors,landmarks);
+
                 matcher.match(landmark_descriptors,descriptors_found,matches);
                 // Store match associations
                 Eigen::MatrixXd potential_measurments;
@@ -280,17 +292,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 for(int i = 0; i < matches.size(); i++) {
                     potential_measurments(0,i) = keypoints_found[matches[i].trainIdx].pt.x;
                     potential_measurments(1,i) = keypoints_found[matches[i].trainIdx].pt.y;
-                }
-
-                // ------------------------------------------------------------------------
-                // Generate chi2LUT
-                // ------------------------------------------------------------------------
-                double nstd     = 3;
-                std::vector<double> chi2LUT;
-                double c = 2*normcdf(3) - 1;
-                for(int i=0; i < potential_measurments.cols(); i++) {
-                        chi2LUT.push_back(chi2inv(c, (i+1)*2));
-                        // std::cout << chi2LUT[i] << ",";
                 }
 
                 //check we have some landmarks initialised already
@@ -314,57 +315,44 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     // ----------------------------------------------------------------
                     // Check compatibility and generated isCompatible flag vector
                     // ----------------------------------------------------------------
-                    std::cout << std::endl;
                     affineTransform(mup,Sp,h,muY,SYY);
-                    std::vector<char> isCompatible;
                     for(int j = 0; j < matches.size(); j++) {
                         bool res = individualCompatibility(j,j,2,potential_measurments,muY,SYY,chi2LUT);
-                        isCompatible.push_back(res);
-                        int n_measurements = yk.rows();
                         if(res){
                             // std::cout << "Pixel at [" << potential_measurments(0,j) << "," << potential_measurments(1,j) << " ] in Image B, matches with landmark " << j << "." <<std::endl;
                             cv::putText(imgout,"J="+std::to_string(j),cv::Point(keypoints_found[matches[j].trainIdx].pt.x+10,keypoints_found[matches[j].trainIdx].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
-                            yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+2,1));
-                            yk.tail(2) = potential_measurments.col(j);
-                            slamparam.landmarks_seen.push_back(j);
-                            // std::cout << "y : " << yk << std::endl;
+
+                            // store list of descriptor indexs we used for landmark update (to exclude from surplus descriptors later)
                             matches_descriptor_idx.push_back(matches[j].trainIdx);
 
-                            //Update our landmarks keypoints for this frame (to avoid initilizing new landmarks on top of current landmarks)
+                            //Update our landmarks keypoints, score, visiblity and pixel measurement for this frame
                             cv::KeyPoint temp;
                             temp.pt.x = keypoints_found[matches[j].trainIdx].pt.x;
                             temp.pt.y = keypoints_found[matches[j].trainIdx].pt.y;
-                            landmark_keypoints[j] = temp;
-                            bad_landmark[j] = 0;
-
+                            landmarks[j].keypoint = temp;  // (to avoid initilizing new landmarks on top of current landmarks)
+                            landmarks[j].score = 0;
+                            landmarks[j].isVisible = true;
+                            landmarks[j].pixel_measurement = potential_measurments.col(j);
                         } else {
-                            bad_landmark[j] += 1;
+                            landmarks[j].isVisible = false;
+                            landmarks[j].score += 1;
                         }
                     }
                 }
 
                 // //Remove failed landmarks from map (consecutive failures to match)
-                // for(int j = 0; j < bad_landmark.size(); j++) {
-                //     Eigen::VectorXd Thetanc(3,1);
-                //     Thetanc = mup.segment(9,3);
-                //     Eigen::MatrixXd Rnc(3,3);
-                //     rpy2rot<double>(Thetanc, Rnc);
-                //     Eigen::VectorXd rJCc(3,1);
-                //     rJCc =  Rnc.transpose()*(mup.segment(12+j*3,3) - mup.segment(6,3));
-
-                //     if(bad_landmark[j] > max_bad_frames) {
-                //         // remove all the things
-                //         std::cout << "rJCc: " << rJCc << std::endl;
-                //         std::cout << "REMOVE LANDMARK : " << j << std::endl;
-                //         std::cout << "score : " << bad_landmark[j] << std::endl;
-                //         cv::putText(imgout,"DELETED LANDMARK  :  "+std::to_string(j),cv::Point(60,260),cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255),2);
-                //         removeBadLandmarks(mup,Sp,landmark_keypoints,landmark_descriptors,slamparam.landmarks_seen,bad_landmark,j);
-                //         //Reset plot states
-                //         muPlot = Eigen::MatrixXd::Zero(muPlot.rows(),1);
-                //         SPlot = Eigen::MatrixXd::Zero(muPlot.rows(),muPlot.rows());
-                //         j = 0;
-                //     }
-                // }
+                for(int j = 0; j < landmarks.size(); j++) {
+                    if(landmarks[j].score > max_bad_frames) {
+                        // remove all the things
+                        std::cout << "REMOVE LANDMARK : " << j << std::endl;
+                        cv::putText(imgout,"DELETED LANDMARK  :  "+std::to_string(j),cv::Point(60,260),cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255),2);
+                        removeBadLandmarks(mup,Sp,landmarks,j);
+                        //Reset plot states
+                        muPlot = Eigen::MatrixXd::Zero(muPlot.rows(),1);
+                        SPlot = Eigen::MatrixXd::Zero(muPlot.rows(),muPlot.rows());
+                        j = 0;
+                    }
+                }
 
                 // Identify surplus features that do not correspond to landmarks in the map
                 // Initialise up to Nmax – N new landmarks from best surplus features
@@ -379,21 +367,16 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     bool isInHeight = height_thresh <= keypoints_found[i].pt.y && keypoints_found[i].pt.y <= slamparam.camera_param.imageSize.height-height_thresh;
                     bool withinRadius;
                     // we have atleast one landmark
-                    if(landmark_keypoints.size() > 0) {
-                        withinRadius = pixelDistance(landmark_keypoints,keypoints_found[i],pixel_distance_thresh);
+                    if(landmarks.size() > 0) {
+                        withinRadius = pixelDistance(landmarks,keypoints_found[i],pixel_distance_thresh);
                     }
                     // std::cout << "score : " << score << std::endl;
                     // std::cout << " found : " << found << std::endl;
                     if(max_new_landmarks > 0  && !found && featureScore && !withinRadius && isInWidth && isInHeight) { //
                         // Add pixel measurements to vector y
-                        int n_measurements = yk.rows();
                         Eigen::MatrixXd pixel(2,1);
                         pixel << keypoints_found[i].pt.x, keypoints_found[i].pt.y;
-                        yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+2,1));
-                        yk.tail(2) = pixel;
-                        // Add new landmark description to now seen list
                         int n_states = mup.rows();
-                        landmark_descriptors.push_back(descriptors_found.row(i));
                         //Reize the state and predicted state matrix
                         SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
                         Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
@@ -414,36 +397,32 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         optical_ray << ray[0].x,ray[0].y,1;
                         Eigen::MatrixXd Kinv(3,3);
                         cv::cv2eigen(camera_param.Kc.inv(),Kinv);
-
                         //Scale it out
                         optical_ray = (Kinv*optical_ray);
                         optical_ray = (optical_ray)/optical_ray.norm();
                         optical_ray = optical_ray_length*optical_ray;
                         std::cout << "optical_ray : " << optical_ray << std::endl;
-
-                        // assert(0);
                         //scale it by 2
                         Thetanc = mup.segment(9,3);
                         rpy2rot(Thetanc, Rnc);
                         Eigen::VectorXd point(3,1);
                         point = mup.segment(6,3) + Rnc*optical_ray;
                         mup.tail(3) << point;
-                        // Add index j to landmark seen vector
-                        slamparam.landmarks_seen.push_back((n_states-12)/3);
-                        std::cout << "NEW LANDMARK : " << (n_states-12)/3 << std::endl;
-                        // Add keypoint to keypoints list
-                        cv::KeyPoint temp;
-                        temp.pt.x = keypoints_found[i].pt.x;
-                        temp.pt.y = keypoints_found[i].pt.y;
-                        landmark_keypoints.push_back(temp);
-                        // Add initial bad landmark score
-                        bad_landmark.push_back(0);
-                        cv::putText(imgout,"J="+std::to_string((mup.rows()-12)/3 - 1),cv::Point(keypoints_found[i].pt.x+30,keypoints_found[i].pt.y+30),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(0, 100, 255),2);
+
+                        // Add new landmark to our landmark list
+                        Landmark new_landmark;
+                        new_landmark.keypoint.pt.x = keypoints_found[i].pt.x;
+                        new_landmark.keypoint.pt.y = keypoints_found[i].pt.y;
+                        new_landmark.descriptor = descriptors_found.row(i);
+                        new_landmark.pixel_measurement = pixel;
+                        new_landmark.isVisible = true;
+                        landmarks.push_back(new_landmark);
+                        cv::putText(imgout,"J="+std::to_string(landmarks.size()),cv::Point(new_landmark.keypoint.pt.x + 30,new_landmark.keypoint.pt.y+30),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(0, 100, 255),2);
                     }
                 }
 
-                for(int i = 0; i < slamparam.landmarks_seen.size(); i++){
-                    std::cout << slamparam.landmarks_seen[i] << std::endl;
+                for(int i = 0; i < landmarks.size(); i++){
+                    std::cout << landmarks[i].isVisible << std::endl;
                 }
 
                 cv::putText(imgout,"frame no. : "+std::to_string(count),cv::Point(60,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
@@ -452,6 +431,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 cv::putText(imgout,"World Position (N,E,D) :  ("+std::to_string(muEKF(6))+","+std::to_string(muEKF(7))+","+std::to_string(muEKF(8))+")",cv::Point(60,170),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
                 cv::putText(imgout,"World Orientation (phi,theta,psi)  :  ("+std::to_string(muEKF(9))+","+std::to_string(muEKF(10))+","+std::to_string(muEKF(11))+")",cv::Point(60,200),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
                 // Measurement update
+                slamparam.landmarks = landmarks;
                 PointLogLikelihood point_ll;
                 measurementUpdateIEKF(mup, Sp, u, yk, point_ll, slamparam, muf, Sf);
                 muEKF               = muf;
@@ -571,13 +551,13 @@ cv::Mat getPlotFrame(const PlotHandles &handles)
     return frame;
 }
 
-bool pixelDistance(std::vector<cv::KeyPoint> landmark_keypoints, cv::KeyPoint keypoint, double pixel_distance_thresh){
+bool pixelDistance(std::vector<Landmark> & landmarks, cv::KeyPoint keypoint, double pixel_distance_thresh){
     //loop through the all the current keypoints initisised and check if its far away
     bool withinRadius = false;
     cv::Point2f b(keypoint.pt.x, keypoint.pt.y);
     // loop through the landmarks just initilised and all the current landmarks
-    for(int i; i < landmark_keypoints.size(); i++){
-        cv::Point2f a(landmark_keypoints[i].pt.x, landmark_keypoints[i].pt.y);
+    for(int i; i < landmarks.size(); i++){
+        cv::Point2f a(landmarks[i].keypoint.pt.x, landmarks[i].keypoint.pt.y);
         cv::Point2f diff = a - b;
         double dist = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
         if(dist < pixel_distance_thresh) {
@@ -587,13 +567,11 @@ bool pixelDistance(std::vector<cv::KeyPoint> landmark_keypoints, cv::KeyPoint ke
     return withinRadius;
 }
 
-void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector<cv::KeyPoint> & landmark_keypoints, cv::Mat & landmark_descriptors, std::vector<int> & landmarks_seen, std::vector<int> & bad_landmark, int j) {
+void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector<Landmark> & landmarks, int j) {
     int nx = 12; //camera states
-    // remove landmark keypoints
-    landmark_keypoints.erase(landmark_keypoints.begin()+nx+j);
-    std::cout << "HERE" << std::endl;
-    std::cout << "bad_landmark.size() " << bad_landmark.size() << std::endl;
-    bad_landmark.erase(bad_landmark.begin()+j);
+    // remove landmark from vector
+    landmarks.erase(landmarks.begin()+j);
+
     // remove landmark keypoints
     for(int i = 0; i < 3; i++){
         //remove landmark states from mu
@@ -602,7 +580,7 @@ void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector
         removeColumn(Sp,nx+j);
     }
 
-    // perform QR decomposition
+    // perform QR decomposition on S to get correct dimensions
     Eigen::HouseholderQR<Eigen::MatrixXd> qr(Sp);
     Eigen::MatrixXd R;
     R.setZero();
@@ -613,24 +591,6 @@ void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector
     S = R.block(0,0,Sp.cols(),Sp.cols());
     //overwrite the old covariance
     Sp = S;
-
-    cv::Mat good_landmark_descriptors;
-    // loop through all descriptors and add to temp descriptors
-    for(int i =0; i < landmark_descriptors.rows; i++){
-        if(i != j) {
-            good_landmark_descriptors.push_back(landmark_descriptors.row(i));
-        }
-    }
-    // ovewrite the old descriptors
-    landmark_descriptors = good_landmark_descriptors;
-    //landmarks seen vector
-    landmarks_seen.erase(std::remove(landmarks_seen.begin(), landmarks_seen.end(), j), landmarks_seen.end());
-    // for each landmark larger then the one just deleted, reduce its index by 1
-    for(int i = 0; i < landmarks_seen.size(); i++) {
-        if( landmarks_seen[i] > j) {
-             landmarks_seen[i] += -1; //reduce index
-        }
-    }
 }
 
 void removeRow(Eigen::VectorXd & vector, unsigned int rowToRemove)
@@ -653,5 +613,11 @@ void removeColumn(Eigen::MatrixXd & matrix, unsigned int colToRemove)
         matrix.block(0,colToRemove,numRows,numCols-colToRemove) = matrix.block(0,colToRemove+1,numRows,numCols-colToRemove);
 
     matrix.conservativeResize(numRows,numCols);
+}
+
+void  combineDescriptors(cv::Mat & landmark_descriptors, std::vector<Landmark> & landmarks) {
+    for(int i = 0; i < landmarks.size(); i++) {
+        landmark_descriptors.push_back(landmarks[i].descriptor);
+    }
 }
 

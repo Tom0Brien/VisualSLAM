@@ -17,6 +17,7 @@ struct SlamParameters
     double position_tune;
     double orientation_tune;
     double measurement_noise;
+    std::vector<Landmark> landmarks;
 };
 
 struct SlamProcessModel

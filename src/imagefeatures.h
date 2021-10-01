@@ -9,6 +9,7 @@ struct Marker {
     std::vector<cv::Point2f> corners;
     Eigen::MatrixXd rMCc;
     Eigen::MatrixXd Rcm;
+    bool isVisible;
 };
 
 struct Feature {
@@ -16,6 +17,16 @@ struct Feature {
     int y;
     float score;
 };
+
+struct Landmark {
+    bool isVisible = false;
+    cv::Mat descriptor;
+    cv::KeyPoint keypoint;
+    Eigen::VectorXd pixel_measurement;
+    int score = 0;
+};
+
+
 
 int detectAndDrawHarris(cv::Mat img, cv::Mat & imgout, int maxNumFeatures);
 int detectAndDrawShiAndTomasi(cv::Mat img, cv::Mat & imgout, int maxNumFeatures);

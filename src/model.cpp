@@ -407,19 +407,18 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
         std::cout << " X has nans: " << x << std::endl;
         assert(0);
     }
-    // std::cout << " X : " << x.rows() << std::endl;
-    // std::cout << " y : " << y << std::endl;
-    // std::cout << " y.rows() : " << y.rows() << std::endl;
-    for(int i = 0; i < param.landmarks_seen.size(); i++) {
-        // *** State Predicted Landmark Location *** //
-        rJNn = x.segment(12+param.landmarks_seen[i]*3,3);
-        int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel); // return [2x12]
-        // *** Measurement Point Pixel ***//
-        measurement_pixel = y.segment(2*i,2);
-        using std::log;
-        if(w2p_flag == 0) {
-            double thresh = 25;
-            cost += logGaussian(measurement_pixel,state_pixel, SR);
+
+    for(int j = 0; j < param.landmarks.size(); j++) {
+        if(param.landmarks[j].isVisible) {
+            // *** State Predicted Landmark Location *** //
+            rJNn = x.segment(12+j*3,3);
+            int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel); // return [2x12]
+            // *** Measurement Point Pixel ***//
+            measurement_pixel = param.landmarks[j].pixel_measurement;
+            if(w2p_flag == 0) {
+                double thresh = 25;
+                cost += logGaussian(measurement_pixel,state_pixel, SR);
+            }
         }
     }
     return cost;
