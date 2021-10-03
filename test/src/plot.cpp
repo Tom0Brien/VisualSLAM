@@ -36,61 +36,35 @@ SCENARIO("plot: 4 landmarks"){
     Eigen::VectorXd mu(nx_all);
     mu.setZero();
     Eigen::MatrixXd S = 0.01*Eigen::MatrixXd::Identity(nx_all,nx_all);
-    mu.block(0, 0, 12, 1)       << 0,0,0,0,0,0,0,0,0,0,0,0;
-    mu.block(nx + 0, 0, 6, 1)   << 0.1,  -0.1, 0.5,0,0,0;
-    mu.block(nx + 6, 0, 6, 1)   << -0.1, -0.1 , 0.5,0,0,0;
-    mu.block(nx + 12, 0, 6, 1)  << -0.1,  0.1 , 0.5,0,0,0;
-    mu.block(nx + 18, 0, 6, 1)  << 0.1,  0.1, 0.5,0,0,0;
+    mu.block(0, 0, 12, 1)       << 0,0,0,0,0,0,0,0,0,-3.14159265359/2, 3.14159265359, 0;
+    mu.block(nx + 0, 0, 6, 1)   << 0.1,  0.1, 0.5,0,0,0;
+    mu.block(nx + 6, 0, 6, 1)   << -0.1, 0.1 , -0.5,0,0,0;
+    mu.block(nx + 12, 0, 6, 1)  << -0.1,  0.1 ,0.5,0,0,0;
+    mu.block(nx + 18, 0, 6, 1)  << 0.1,   0.1, -0.5,0,0,0;
 
 
 
     assert(nx_all==S.rows());
     SlamParameters slamparam;
+    slamparam.n_landmark = 6;
     PlotHandles handles;
-    bool doInteractor = true;
-    if (!doInteractor){
-        initPlotStates(mu, S, param, handles,slamparam);
-    }
 
-
-    std::filesystem::path  outdir("out");
-    if (!std::filesystem::is_directory(outdir)){
-        bool isCreated = std::filesystem::create_directory(outdir);
-        assert (isCreated);
-    }
-
+    initPlotStates(mu, S, param, handles,slamparam);
     cv::Mat view;
     view = cv::imread("data/1023.jpg");
-
-    // if (!doInteractor){
-    //     updatePlotStates(view, mu, S, param, handles);
-    //     // std::filesystem::path  outputPath;
-    //     // outputPath               = outdir / imgFiles.at(k);
-    //     // WriteImage(outputPath.string(), handles.renderWindow);
-    // }
-    // else
-    // {
-    //     PlotHandles tmpHandles;
-    //     initPlotStates(mu, S, param, tmpHandles);
-    //     updatePlotStates(view, mu, S, param, tmpHandles);
-
-    //     // std::filesystem::path  outputPath;
-    //     // outputPath               = outdir / imgFiles.at(k);
-    //     // WriteImage(outputPath.string(), tmpHandles.renderWindow);
-
-    //     // -------------------------
-    //     // Attach interactor for playing with the 3d interface
-    //     // -------------------------
-    //     vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
-    //     vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+    updatePlotStates(view, mu, S, param, handles,slamparam);
+    // -------------------------
+    // Attach interactor for playing with the 3d interface
+    // -------------------------
+    vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+    vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
 
 
-    //     threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
-    //     threeDimInteractor->SetRenderWindow(tmpHandles.renderWindow);
+    threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+    threeDimInteractor->SetRenderWindow(handles.renderWindow);
+    threeDimInteractor->Initialize();
+    threeDimInteractor->Start();
 
-    //     threeDimInteractor->Initialize();
-    //     threeDimInteractor->Start();
-    // }
 }
 
 

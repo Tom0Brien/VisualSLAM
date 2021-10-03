@@ -73,7 +73,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     int max_features;
     int max_bad_frames;
     double feature_thresh;
-    double pixel_distance_thresh;
+    double initial_pixel_distance_thresh;
+    double update_pixel_distance_thresh;
     if(scenario == 1) {
         std::cout << "Scenario 1" << std::endl;
         slamparam.position_tune = 0.1;
@@ -99,22 +100,23 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
         slamparam.position_tune = 0.1;
-        slamparam.orientation_tune = 0.1;
+        slamparam.orientation_tune = 0.075;
         // MEASUREMENT MODEL
-        slamparam.measurement_noise = 1;
+        slamparam.measurement_noise = 3;
         // Map tuning
         max_landmarks = 30;
         max_features = 10000;
         max_bad_frames = 5;
         feature_thresh = 0.0002;
-        pixel_distance_thresh = 100;
+        initial_pixel_distance_thresh = 75;
+        update_pixel_distance_thresh = 50;
         // Initilizing landmarks
-        optical_ray_length = 7.5;
-        kappa = 1;
+        optical_ray_length = 3.5;
+        kappa = 1.3;
 
         slamparam.n_landmark = 3;
         // Initial conditions
-        SEKF.diagonal() << 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.01, 0.01, 0.01, 0.05, 0.05, 0.05;
+        SEKF.diagonal() << 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005;
         muEKF <<        0, // x dot
                         0, // y dot
                         0, // z dot
@@ -149,6 +151,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     // Scenario 1
     std::vector<int> marker_ids;
+    std::vector<Marker> markers;
 
     //Scenario 2
     std::vector<Landmark> landmarks;
@@ -318,7 +321,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     affineTransform(mup,Sp,h,muY,SYY);
                     for(int j = 0; j < matches.size(); j++) {
                         bool res = individualCompatibility(j,j,2,potential_measurments,muY,SYY,chi2LUT);
-                        if(res){
+                        bool withinRadius = pixelDistance(landmarks,keypoints_found[matches[j].trainIdx],update_pixel_distance_thresh,j);
+                        if(res && !withinRadius){
                             // std::cout << "Pixel at [" << potential_measurments(0,j) << "," << potential_measurments(1,j) << " ] in Image B, matches with landmark " << j << "." <<std::endl;
                             cv::putText(imgout,"J="+std::to_string(j),cv::Point(keypoints_found[matches[j].trainIdx].pt.x+10,keypoints_found[matches[j].trainIdx].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
 
@@ -361,14 +365,14 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     // if index in the list of descriptor of the indexs the matches found dont initilize
                     bool found = std::find(matches_descriptor_idx.begin(), matches_descriptor_idx.end(), i) != matches_descriptor_idx.end();
                     bool featureScore = keypoints_found[i].response > feature_thresh;
-                    double width_thresh = 200;
+                    double width_thresh = 400;
                     double height_thresh = 100;
                     bool isInWidth  = width_thresh <= keypoints_found[i].pt.x && keypoints_found[i].pt.x <= slamparam.camera_param.imageSize.width-width_thresh;
                     bool isInHeight = height_thresh <= keypoints_found[i].pt.y && keypoints_found[i].pt.y <= slamparam.camera_param.imageSize.height-height_thresh;
                     bool withinRadius;
                     // we have atleast one landmark
                     if(landmarks.size() > 0) {
-                        withinRadius = pixelDistance(landmarks,keypoints_found[i],pixel_distance_thresh);
+                        withinRadius = pixelDistance(landmarks,keypoints_found[i],initial_pixel_distance_thresh);
                     }
                     // std::cout << "score : " << score << std::endl;
                     // std::cout << " found : " << found << std::endl;
@@ -421,8 +425,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     }
                 }
 
+                //TEMP: FIX THIS
                 for(int i = 0; i < landmarks.size(); i++){
-                    std::cout << landmarks[i].isVisible << std::endl;
+                    std::cout <<" score : " << landmarks[i].score << std::endl;
+                    if(landmarks[i].isVisible) {
+                        slamparam.landmarks_seen.push_back(i);
+                    }
                 }
 
                 cv::putText(imgout,"frame no. : "+std::to_string(count),cv::Point(60,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
@@ -567,6 +575,24 @@ bool pixelDistance(std::vector<Landmark> & landmarks, cv::KeyPoint keypoint, dou
     return withinRadius;
 }
 
+bool pixelDistance(std::vector<Landmark> & landmarks, cv::KeyPoint keypoint, double pixel_distance_thresh, int landmark_index){
+    //loop through the all the current keypoints initisised and check if its far away
+    bool withinRadius = false;
+    cv::Point2f b(keypoint.pt.x, keypoint.pt.y);
+    // loop through the landmarks just initilised and all the current landmarks
+    for(int j; j < landmarks.size(); j++){
+        if(landmark_index != j) {
+            cv::Point2f a(landmarks[j].keypoint.pt.x, landmarks[j].keypoint.pt.y);
+            cv::Point2f diff = a - b;
+            double dist = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+            if(dist < pixel_distance_thresh) {
+                withinRadius = true;
+            }
+        }
+    }
+    return withinRadius;
+}
+
 void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector<Landmark> & landmarks, int j) {
     int nx = 12; //camera states
     // remove landmark from vector
@@ -575,9 +601,9 @@ void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector
     // remove landmark keypoints
     for(int i = 0; i < 3; i++){
         //remove landmark states from mu
-        removeRow(mup,nx+j);
+        removeRow(mup,nx+j*3);
         //remove the columns of the covariance matrix for landmark
-        removeColumn(Sp,nx+j);
+        removeColumn(Sp,nx+j*3);
     }
 
     // perform QR decomposition on S to get correct dimensions

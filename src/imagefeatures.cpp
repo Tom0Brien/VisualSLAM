@@ -65,17 +65,18 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
     }
     return 0;
 }
+
 int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat & descriptors, std::vector<cv::KeyPoint> & keypoints){
     //Create orb detector
     cv::Ptr<cv::ORB> orb = cv::ORB::create(
         maxNumFeatures,         // nfeatures
         1.2f,                   // scaleFactor
         8,                      // nlevels
-        31,                     // edgeThreshold
+        100,                     // edgeThreshold
         0,                      // firstLevel
         2,                      // WTA_K
         cv::ORB::HARRIS_SCORE,  // scoreType
-        31,                     // patchSize
+        100,                     // patchSize
         20                      // fastThreshold
     );
     // Detect the position of the Oriented FAST corner point.
