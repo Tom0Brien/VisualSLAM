@@ -163,7 +163,7 @@ static Scalar arucoLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
     rJcJj.block(0,2,3,1) << length/2, -length/2, 0;
     rJcJj.block(0,3,3,1) << -length/2, -length/2, 0;
 
-    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = 7*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = param.measurement_noise*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
     Scalar cost = 0;
     eta = x.segment(6,6);
     //For each landmark seen
@@ -421,10 +421,10 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
 
     //For each landmark seen
     int count = 0;
-    if(x.hasNaN()){
-        std::cout << " X has nans: " << x << std::endl;
-        assert(0);
-    }
+    // if(x.hasNaN()){
+    //     std::cout << " X has nans: " << x << std::endl;
+    //     assert(0);
+    // }
 
     for(int j = 0; j < param.landmarks.size(); j++) {
         if(param.landmarks[j].isVisible) {
@@ -440,6 +440,25 @@ static Scalar pointLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y,
         }
     }
     return cost;
+}
+
+double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param)
+{
+    // Evaluate log N(y;h(x),R)
+    return pointLogLikelihood(y, x, u, param);
+}
+
+
+double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g)
+{
+    Eigen::Matrix<autodiff::dual,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual>();
+    autodiff::dual fdual;
+    auto t_start = std::chrono::high_resolution_clock::now();
+    g = autodiff::gradient(pointLogLikelihood<autodiff::dual>, wrt(xdual), at(y,xdual,u,param), fdual);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    // std::cout << "Time taken for gradient calc [s]: " << elapsed_time_ms/1000 << std::endl;
+    return val(fdual);
 }
 
 double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd & H)

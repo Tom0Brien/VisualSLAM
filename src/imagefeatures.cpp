@@ -30,6 +30,8 @@ int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & dete
      std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
     cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+    parameters->cornerRefinementWinSize = 10;
+    parameters->minCornerDistanceRate = 0.03;
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::detectMarkers(img, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
 

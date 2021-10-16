@@ -6,7 +6,17 @@
 #include "measurementPointLandmark.hpp"
 #include <opencv2/calib3d.hpp>
 #include <memory>
+
 #include <thread>
+#include <condition_variable>
+#include <mutex>
+
+#include "fmin.hpp"
+
+std::mutex mut;
+std::condition_variable cond_v;
+bool ready = false;
+
 
 void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, const std::filesystem::path &outputDirectory)
 {
@@ -80,6 +90,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         slamparam.position_tune = 0.3;
         slamparam.orientation_tune = 0.2;
         slamparam.n_landmark = 6;
+        slamparam.measurement_noise = 20;
         max_landmarks = 150;
         max_features = 100;
         kappa = 0.5;
@@ -92,27 +103,27 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         0, // x
                         0, // y
                         -1.8, // z
-                        -3.14159265359/2, // Phi
+                        -3.14159265359/2, // Psi
                         3.14159265359, // Theta
-                        0  ; // Psi
+                        0  ; // Phi
         SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
         slamparam.position_tune = 0.3;
-        slamparam.orientation_tune = 0.1;
+        slamparam.orientation_tune = 0.2;
         // MEASUREMENT MODEL
-        slamparam.measurement_noise = 10;
+        slamparam.measurement_noise = 7;
         // Map tuning
         max_landmarks = 30;
         max_features = 20000;
         max_bad_frames = 5;
         feature_thresh = 0.0002;
-        initial_pixel_distance_thresh = 75;
+        initial_pixel_distance_thresh = 100;
         update_pixel_distance_thresh = 25;
         // Initilizing landmarks
         optical_ray_length = 3.5;
-        kappa = 1.3;
+        kappa = 1;
 
         slamparam.n_landmark = 3;
         // Initial conditions
@@ -126,9 +137,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         0, // x
                         0, // y
                         -1.8, //-1.8, // z
-                        -3.14159265359/2, // Phi
+                        -3.14159265359/2, // Psi
                         3.14159265359, // Theta
-                        0  ; // Psi
+                        0  ; // Phi
     }
 
     //Initialize the plot states
@@ -264,9 +275,65 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // Measurement update
                 ArucoLogLikelihood aruco_ll;
                 std::cout << "frame no. : " << count << std::endl;
+
                 measurementUpdateIEKFSR1(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
-                muEKF               = muf;
-                SEKF                = Sf;
+                muEKF   = muf;
+                SEKF    = Sf;
+
+                if (SEKF.hasNaN() || muEKF.hasNaN()){
+
+                    measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
+                    muEKF   = muf;
+                    SEKF    = Sf;
+                }
+
+                // ready = false;
+                // std::thread t1{[&mup, &Sp, &u, &yk, &aruco_ll, &slamparam, &muf, &Sf, &muEKF, &SEKF]
+                //     {
+                //         measurementUpdateIEKFSR1(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
+                //         std::unique_lock<std::mutex> lk(mut);
+                //         if(!ready) {
+                //         std::cout << "sheesh 1" << std::endl;
+                //             muEKF   = muf;
+                //             SEKF    = Sf;
+                //         } else {
+                //             return;
+                //         }
+                //         std::cout << "measurementUpdateIEKFSR1 finished" << std::endl;
+                //         ready = true;
+                //         cond_v.notify_one();
+                //     }};
+
+                // std::thread t2{[&mup, &Sp, &u, &yk, &aruco_ll, &slamparam, &muf, &Sf, &muEKF, &SEKF]
+                //     {
+                //     measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
+                //     std::unique_lock<std::mutex> lk(mut);
+                //     if(!ready) {
+                //         std::cout << "sheesh 2" << std::endl;
+                //         muEKF   = muf;
+                //         SEKF    = Sf;
+                //     } else {
+                //         return;
+                //     }
+                //     std::cout << "measurementUpdateIEKF finished" << std::endl;
+                //     ready = true;
+                //     cond_v.notify_one();
+                //     }};
+
+                // std::cout << "2" << std::endl;
+                // {
+                // std::unique_lock<std::mutex> lk(mut);
+                // while (!ready)
+                //     cond_v.wait(lk);
+                // }
+
+                // std::cout << "3" << std::endl;
+
+                // // she'll be right
+                // ready = false;
+                // t1.join();
+                // t2.join();
+
                 break;
             }
             case 2:
@@ -482,9 +549,16 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // Measurement update
                 slamparam.landmarks = landmarks;
                 PointLogLikelihood point_ll;
-                measurementUpdateIEKF(mup, Sp, u, yk, point_ll, slamparam, muf, Sf);
-                muEKF               = muf;
-                SEKF                = Sf;
+                measurementUpdateIEKFSR1(mup, Sp, u, yk, point_ll, slamparam, muf, Sf);
+                muEKF   = muf;
+                SEKF    = Sf;
+
+                if (SEKF.hasNaN() || muEKF.hasNaN()){
+
+                    measurementUpdateIEKF(mup, Sp, u, yk, point_ll, slamparam, muf, Sf);
+                    muEKF   = muf;
+                    SEKF    = Sf;
+                }
                 break;
             }
             case 3:

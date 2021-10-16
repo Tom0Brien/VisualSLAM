@@ -33,8 +33,6 @@
 #include "model.hpp"
 
 
-
-
 void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, const std::filesystem::path &outputDirectory);
 cv::Mat getPlotFrame(const PlotHandles &handles);
 void plot(cv::Mat & imgout, Eigen::MatrixXd & muPlot, Eigen::MatrixXd & SPlot, SlamParameters & slamparam, CameraParameters & param, int interactive, cv::VideoWriter & video);

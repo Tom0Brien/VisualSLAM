@@ -106,43 +106,6 @@ int fminNewtonTrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Ei
     return 1;
 }
 
-template <typename Func>
-int fminNewtonTrust(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Eigen::MatrixXd &H, int verbosity = 0)
-{
-    typedef double Scalar;
-    typedef Eigen::VectorXd Vector;
-    typedef Eigen::MatrixXd Matrix;
-
-    Matrix Q(x.size(),x.size());
-    Vector v(x.size());
-
-    int retval = fminNewtonTrustEig(costFunc, x, g, Q, v, verbosity);
-    H = Q*v.asDiagonal()*Q.transpose();
-    return retval;
-}
-
-template <typename Func>
-int fminNewtonTrust(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, int verbosity = 0)
-{
-    typedef double Scalar;
-    typedef Eigen::VectorXd Vector;
-    typedef Eigen::MatrixXd Matrix;
-
-    Matrix H(x.size(), x.size());
-    return fminNewtonTrust(costFunc, x, g, H, verbosity);
-}
-
-template <typename Func>
-int fminNewtonTrust(Func costFunc, Eigen::VectorXd &x, int verbosity = 0)
-{
-    typedef double Scalar;
-    typedef Eigen::VectorXd Vector;
-    typedef Eigen::MatrixXd Matrix;
-
-    Vector g(x.size());
-    return fminNewtonTrust(costFunc, x, g, verbosity);
-}
-
 //
 //  Minimise f(x) using trust-region quasi-Newton SR1 method
 //
@@ -174,7 +137,7 @@ int fminSR1TrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Eigen
 
     Scalar Delta = 1e0;     // Initial trust-region radius
 
-    const int maxIterations = 5000;
+    const int maxIterations = 100; //5000
     for (int i = 0; i < maxIterations; ++i)
     {
         // Solve trust-region subproblem
@@ -248,5 +211,44 @@ int fminSR1TrustEig(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Eigen
         std::printf("WARNING: maximum number of iterations reached\n");
     return 1;
 }
+
+template <typename Func>
+int fminNewtonTrust(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, Eigen::MatrixXd &H, int verbosity = 0)
+{
+    typedef double Scalar;
+    typedef Eigen::VectorXd Vector;
+    typedef Eigen::MatrixXd Matrix;
+
+    Matrix Q(x.size(),x.size());
+    Vector v(x.size());
+
+    int retval = fminNewtonTrustEig(costFunc, x, g, Q, v, verbosity);
+    H = Q*v.asDiagonal()*Q.transpose();
+    return retval;
+}
+
+template <typename Func>
+int fminNewtonTrust(Func costFunc, Eigen::VectorXd &x, Eigen::VectorXd &g, int verbosity = 0)
+{
+    typedef double Scalar;
+    typedef Eigen::VectorXd Vector;
+    typedef Eigen::MatrixXd Matrix;
+
+    Matrix H(x.size(), x.size());
+    return fminNewtonTrust(costFunc, x, g, H, verbosity);
+}
+
+template <typename Func>
+int fminNewtonTrust(Func costFunc, Eigen::VectorXd &x, int verbosity = 0)
+{
+    typedef double Scalar;
+    typedef Eigen::VectorXd Vector;
+    typedef Eigen::MatrixXd Matrix;
+
+    Vector g(x.size());
+    return fminNewtonTrust(costFunc, x, g, verbosity);
+}
+
+
 
 #endif
