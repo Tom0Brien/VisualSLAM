@@ -77,12 +77,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     double update_pixel_distance_thresh;
     if(scenario == 1) {
         std::cout << "Scenario 1" << std::endl;
-        slamparam.position_tune = 0.1;
-        slamparam.orientation_tune = 0.1;
+        slamparam.position_tune = 0.3;
+        slamparam.orientation_tune = 0.2;
         slamparam.n_landmark = 6;
         max_landmarks = 150;
         max_features = 100;
-        kappa = 1;
+        kappa = 0.5;
         muEKF <<        0, // x dot
                         0, // y dot
                         0, // z dot
@@ -264,7 +264,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // Measurement update
                 ArucoLogLikelihood aruco_ll;
                 std::cout << "frame no. : " << count << std::endl;
-                measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
+                measurementUpdateIEKFSR1(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
                 muEKF               = muf;
                 SEKF                = Sf;
                 break;

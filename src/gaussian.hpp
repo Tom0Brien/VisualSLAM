@@ -435,39 +435,33 @@ void measurementUpdateEKF(
 template <typename LogLikFunc, typename ParamStruct>
 struct CostJointDensity
 {
+    double operator()(LogLikFunc logLikelihood, const Eigen::VectorXd &y, const Eigen::VectorXd &x, const Eigen::VectorXd &u, const ParamStruct &param, const Eigen::VectorXd &mu, const Eigen::MatrixXd &S)
+    {
+        double logprior = logGaussian(x, mu, S);
+        double loglik = logLikelihood(y, x, u, param);
+        return -(logprior + loglik);
+    }
+
+    double operator()(LogLikFunc logLikelihood, const Eigen::VectorXd &y, const Eigen::VectorXd &x, const Eigen::VectorXd &u, const ParamStruct &param, const Eigen::VectorXd &mu, const Eigen::MatrixXd &S, Eigen::VectorXd &g)
+    {
+        Eigen::VectorXd logpriorGrad(x.size());
+        double logprior = logGaussian(x, mu, S, logpriorGrad);
+        Eigen::VectorXd loglikGrad(x.size());
+        double loglik = logLikelihood(y, x, u, param, loglikGrad);
+        g = -(logpriorGrad + loglikGrad);
+        return -(logprior + loglik);
+    }
+
     double operator()(LogLikFunc logLikelihood, const Eigen::VectorXd &y, const Eigen::VectorXd &x, const Eigen::VectorXd &u, const ParamStruct &param, const Eigen::VectorXd &mu, const Eigen::MatrixXd &S, Eigen::VectorXd &g, Eigen::MatrixXd &H)
     {
         Eigen::VectorXd logpriorGrad(x.size());
         Eigen::MatrixXd logpriorHess(x.size(),x.size());
-
         double logprior = logGaussian(x, mu, S, logpriorGrad, logpriorHess);
-        if(mu.hasNaN() || S.hasNaN() || logpriorGrad.hasNaN() || logpriorHess.hasNaN()){
-            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            std::cout << "NaNs encountered in mu. mu = \n" << mu << std::endl;
-            std::cout << "NaNs encountered in mu. mu.rows() = \n" << mu.rows() << std::endl;
-            std::cout << "NaNs encountered in mu. mu.cols() = \n" << mu.cols() << std::endl;
-            std::cout << "NaNs encountered in S. S = \n" << S << std::endl;
-            std::cout << "NaNs encountered in S. S.rows() = \n" << S.rows() << std::endl;
-            std::cout << "NaNs encountered in S. S.cols() = \n" << S.cols() << std::endl;
-            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            // assert(0);
-        }
-
         Eigen::VectorXd loglikGrad(x.size());
         Eigen::MatrixXd loglikHess(x.size(),x.size());
         double loglik = logLikelihood(y, x, u, param, loglikGrad, loglikHess);
-
-        if(loglikGrad.hasNaN() || loglikHess.hasNaN()){
-            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            std::cout << "NaNs encountered in loglikGrad. loglikGrad = \n" << loglikGrad << std::endl;
-            std::cout << "NaNs encountered in loglikHess. loglikHess.rows() = \n" << loglikHess.rows() << std::endl;
-            std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
-            // assert(0);
-        }
-
         g = -(logpriorGrad + loglikGrad);
         H = -(logpriorHess + loglikHess);
-
         return -(logprior + loglik);
     }
 };
@@ -535,6 +529,48 @@ void measurementUpdateIEKF(
             std::cout << "(╯°□°）╯︵ ┻━┻ " << std::endl;
             // assert(0);
     }
+}
+
+#include <Eigen/Eigenvalues>
+
+template <typename Func, typename ParamStruct>
+void measurementUpdateIEKFSR1(
+    const Eigen::VectorXd       & mux,      // Input
+    const Eigen::MatrixXd       & Sxx,      // Input
+    const Eigen::VectorXd         & u,      // Input
+    const Eigen::VectorXd         & y,      // Input
+    Func                logLikelihood,      // Model
+    const ParamStruct         & param,      // Input
+    Eigen::VectorXd           & muxGy,      // Output
+    Eigen::MatrixXd           & SxxGy       // Output
+    )
+{
+    assert(mux.size()>0);
+
+    // Create cost function with prototype
+    // V = cost(x, g)
+    CostJointDensity<Func, ParamStruct> cjd;
+    using namespace std::placeholders;
+    auto costFunc = std::bind(cjd, logLikelihood, y, _1, u, param, mux, Sxx, _2);
+
+    // Minimise cost
+    Eigen::MatrixXd Q(mux.size(),mux.size());
+    Eigen::VectorXd v(mux.size());
+    Eigen::VectorXd g(mux.size());
+    constexpr int verbosity = 1; // 0:none, 1:dots, 2:summary, 3:iter
+    muxGy = mux; // Start optimisation at prior mean
+
+    // Eigendecomposition of initial Hessian (inverse of prior covariance)
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigenH(Sxx.transpose()*Sxx);
+    v = eigenH.eigenvalues().cwiseInverse();
+    Q = eigenH.eigenvectors();
+
+    fminSR1TrustEig(costFunc, muxGy, g, Q, v, verbosity);
+
+    // Post-calculate posterior square-root covariance from Hessian approximation
+    SxxGy = v.cwiseSqrt().cwiseInverse().asDiagonal()*Q.transpose();
+    Eigen::HouseholderQR<Eigen::Ref<Eigen::MatrixXd>> qr(SxxGy); // decomposition in place
+    SxxGy = qr.matrixQR().triangularView<Eigen::Upper>();
 }
 
 
