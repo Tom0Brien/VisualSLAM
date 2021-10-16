@@ -72,11 +72,11 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat 
         maxNumFeatures,         // nfeatures
         1.2f,                   // scaleFactor
         8,                      // nlevels
-        100,                     // edgeThreshold
+        75,                     // edgeThreshold
         0,                      // firstLevel
         2,                      // WTA_K
         cv::ORB::HARRIS_SCORE,  // scoreType
-        100,                     // patchSize
+        75,                     // patchSize
         20                      // fastThreshold
     );
     // Detect the position of the Oriented FAST corner point.

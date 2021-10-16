@@ -1,6 +1,6 @@
 #include <cstdlib>
 #include <cassert>
-#include <string>  
+#include <string>
 #include <filesystem>
 #include <iostream>
 #include <opencv2/core.hpp>

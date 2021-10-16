@@ -99,24 +99,24 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
-        slamparam.position_tune = 0.1;
-        slamparam.orientation_tune = 0.075;
+        slamparam.position_tune = 0.3;
+        slamparam.orientation_tune = 0.1;
         // MEASUREMENT MODEL
-        slamparam.measurement_noise = 3;
+        slamparam.measurement_noise = 10;
         // Map tuning
         max_landmarks = 30;
-        max_features = 10000;
+        max_features = 20000;
         max_bad_frames = 5;
         feature_thresh = 0.0002;
         initial_pixel_distance_thresh = 75;
-        update_pixel_distance_thresh = 50;
+        update_pixel_distance_thresh = 25;
         // Initilizing landmarks
         optical_ray_length = 3.5;
         kappa = 1.3;
 
         slamparam.n_landmark = 3;
         // Initial conditions
-        SEKF.diagonal() << 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.005, 0.005, 0.005, 0.005, 0.005, 0.005;
+        SEKF.diagonal() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0001, 0.0001, 0.0001, 0.0001, 0.001, 0.0001;
         muEKF <<        0, // x dot
                         0, // y dot
                         0, // z dot
@@ -319,10 +319,39 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     // Check compatibility and generated isCompatible flag vector
                     // ----------------------------------------------------------------
                     affineTransform(mup,Sp,h,muY,SYY);
+                    std::vector<bool> res;
                     for(int j = 0; j < matches.size(); j++) {
-                        bool res = individualCompatibility(j,j,2,potential_measurments,muY,SYY,chi2LUT);
+                        bool result = individualCompatibility(j,j,2,potential_measurments,muY,SYY,chi2LUT);
+                        res.push_back(result);
+                    }
+
+                    // ------------------------------------------------------------------------
+                    // Run surprisal nearest neighbours
+                    // ------------------------------------------------------------------------
+
+                    std::cout << "Run surprisal nearest neighbours." << std::endl;
+                    std::cout << "mup.rows()" << mup.rows() << std::endl;
+                    std::cout << "mup.cols()" << mup.cols() << std::endl;
+                    // TODO
+                    std::vector<int> idx;
+                    snn(mup,Sp,potential_measurments,slamparam.camera_param,idx,false);
+
+                    // ------------------------------------------------------------------------
+                    // Populate matches and isCompatible vectors for drawMatches
+                    // ------------------------------------------------------------------------
+                    std::cout << "Populate matches and isCompatible vectors for drawMatches." << std::endl;
+                    // std::vector< cv::DMatch > matches;
+                    // TODO
+                    for(int j = 0; j < idx.size(); j++){
+                        cv::DMatch temp;
+                        int i = idx[j];
+                        bool isMatch = i >= 0;
+                        temp.queryIdx = j;
+                        temp.trainIdx = i;
                         bool withinRadius = pixelDistance(landmarks,keypoints_found[matches[j].trainIdx],update_pixel_distance_thresh,j);
-                        if(res && !withinRadius){
+                        // matches.push_back(temp);
+                        if(isMatch && res[j] && !withinRadius){
+                            std::cout << "Pixel " << i << " in y located at [ " << potential_measurments(0,i) << "," << potential_measurments(1,i) << "] in imageB, matches with landmark " << j << "." << std::endl;
                             // std::cout << "Pixel at [" << potential_measurments(0,j) << "," << potential_measurments(1,j) << " ] in Image B, matches with landmark " << j << "." <<std::endl;
                             cv::putText(imgout,"J="+std::to_string(j),cv::Point(keypoints_found[matches[j].trainIdx].pt.x+10,keypoints_found[matches[j].trainIdx].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
 
@@ -365,11 +394,11 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     // if index in the list of descriptor of the indexs the matches found dont initilize
                     bool found = std::find(matches_descriptor_idx.begin(), matches_descriptor_idx.end(), i) != matches_descriptor_idx.end();
                     bool featureScore = keypoints_found[i].response > feature_thresh;
-                    double width_thresh = 400;
+                    double width_thresh = 200;
                     double height_thresh = 100;
                     bool isInWidth  = width_thresh <= keypoints_found[i].pt.x && keypoints_found[i].pt.x <= slamparam.camera_param.imageSize.width-width_thresh;
                     bool isInHeight = height_thresh <= keypoints_found[i].pt.y && keypoints_found[i].pt.y <= slamparam.camera_param.imageSize.height-height_thresh;
-                    bool withinRadius;
+                    bool withinRadius = false;
                     // we have atleast one landmark
                     if(landmarks.size() > 0) {
                         withinRadius = pixelDistance(landmarks,keypoints_found[i],initial_pixel_distance_thresh);
@@ -391,26 +420,38 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                             Sp(Sp.rows()-3+k,Sp.rows()-3+k) = kappa;
                         }
                         // Add initial good guess
-                        std::vector<cv::Point2f> pixels_to_undistort; cv::Point2f pixel_to_undistort;
-                        std::vector<cv::Point2f> ray;
+                        cv::Mat P;
+                        Eigen::MatrixXd P_eig(3,4);
+                        P_eig.setZero();
+                        Eigen::MatrixXd K;
+                        cv::cv2eigen(slamparam.camera_param.Kc,K);
+                        P_eig.block(0,0,3,3) = K;
+                        cv::eigen2cv(P_eig,P);
+
+                        std::vector<cv::Point2f> pixels_to_undistort;
+                        cv::Point2f pixel_to_undistort;
+                        std::vector<cv::Point2f> undistorted_pixels;
                         pixel_to_undistort.x = pixel(0);
                         pixel_to_undistort.y = pixel(1);
                         pixels_to_undistort.push_back(pixel_to_undistort);
-                        cv::undistortPoints(pixels_to_undistort, ray, camera_param.Kc, camera_param.distCoeffs, cv::noArray(), camera_param.Kc);
-                        Eigen::VectorXd optical_ray(3,1);
-                        optical_ray << ray[0].x,ray[0].y,1;
-                        Eigen::MatrixXd Kinv(3,3);
-                        cv::cv2eigen(camera_param.Kc.inv(),Kinv);
-                        //Scale it out
-                        optical_ray = (Kinv*optical_ray);
-                        optical_ray = (optical_ray)/optical_ray.norm();
-                        optical_ray = optical_ray_length*optical_ray;
-                        std::cout << "optical_ray : " << optical_ray << std::endl;
+                        cv::undistortPoints(pixels_to_undistort, undistorted_pixels, slamparam.camera_param.Kc, slamparam.camera_param.distCoeffs, cv::Mat::eye(3,3, CV_64F), P);
+
+                        Eigen::MatrixXd pix(3,1);
+                        pix << undistorted_pixels[0].x,undistorted_pixels[0].y,1;
+
+                        Eigen::MatrixXd Kinv;
+                        cv::cv2eigen(slamparam.camera_param.Kc.inv(),Kinv);
+                        Eigen::MatrixXd rPCc_eig(3,1);
+
+                        rPCc_eig = Kinv*pix;
+
+                        rPCc_eig = optical_ray_length*rPCc_eig;
+                        std::cout << "optical_ray : " << rPCc_eig << std::endl;
                         //scale it by 2
                         Thetanc = mup.segment(9,3);
                         rpy2rot(Thetanc, Rnc);
                         Eigen::VectorXd point(3,1);
-                        point = mup.segment(6,3) + Rnc*optical_ray;
+                        point = mup.segment(6,3) + Rnc*rPCc_eig;
                         mup.tail(3) << point;
 
                         // Add new landmark to our landmark list
@@ -646,4 +687,3 @@ void  combineDescriptors(cv::Mat & landmark_descriptors, std::vector<Landmark> &
         landmark_descriptors.push_back(landmarks[i].descriptor);
     }
 }
-

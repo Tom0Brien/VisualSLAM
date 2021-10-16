@@ -34,7 +34,7 @@ double snn(const Eigen::VectorXd & mux, const Eigen::MatrixXd & Sxx, const Eigen
 
     // Check the length of the state vector is of dimensions such that
     // nx_all - nx is a multiple of three
-    int nx      = 6;
+    int nx      = 12;
     assert(((nx_all - nx)%3)==0);
 
     // Check that there is a positive number of landmarks
@@ -180,6 +180,9 @@ bool jointCompatibility(const std::vector<int> & idx, const double & sU, const i
     int n           = idx.size();
 
     assert(y.rows() == ny);
+    std::cout << "n " << n << std::endl;
+    std::cout << "ny " << ny << std::endl;
+    std::cout << "muY.rows() " << muY.rows() << std::endl;
     assert(n*ny == muY.rows());
     assert(SYY.rows() == muY.rows());
     assert(SYY.cols() == muY.rows());
