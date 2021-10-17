@@ -14,8 +14,8 @@ struct SlamParameters
     CameraParameters camera_param;
     std::vector<int> landmarks_seen;
     int n_landmark;
-    double position_tune;
-    double orientation_tune;
+    Eigen::MatrixXd position_tune;
+    Eigen::MatrixXd orientation_tune;
     double measurement_noise;
     std::vector<Landmark> landmarks;
 };
@@ -51,6 +51,7 @@ struct PointLogLikelihood
 
 struct arucoLogLikelihoodAnalytical
 {
+    double operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g);
     double operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
 };
 

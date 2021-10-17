@@ -62,9 +62,9 @@ set(OLD_GLOB
   "C:/msys64/home/Tom/VisualSLAM/test/src/deleteLandmarks.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/main.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/measurementModel.cpp"
+  "C:/msys64/home/Tom/VisualSLAM/test/src/model.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/pixelDistance.cpp"
   "C:/msys64/home/Tom/VisualSLAM/test/src/plot.cpp"
-  "C:/msys64/home/Tom/VisualSLAM/test/src/processModel.cpp"
   )
 if(NOT "${NEW_GLOB}" STREQUAL "${OLD_GLOB}")
   message("-- GLOB mismatch!")

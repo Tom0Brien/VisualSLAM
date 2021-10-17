@@ -42,4 +42,5 @@ void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector
 void removeRow(Eigen::VectorXd & vector, unsigned int rowToRemove);
 void removeColumn(Eigen::MatrixXd & matrix, unsigned int colToRemove);
 void  combineDescriptors(cv::Mat & landmark_descriptors, std::vector<Landmark> & landmarks);
+Eigen::MatrixXd generateOpticalRay(const CameraParameters & param, Eigen::MatrixXd & pixel);
 #endif

@@ -180,9 +180,6 @@ bool jointCompatibility(const std::vector<int> & idx, const double & sU, const i
     int n           = idx.size();
 
     assert(y.rows() == ny);
-    std::cout << "n " << n << std::endl;
-    std::cout << "ny " << ny << std::endl;
-    std::cout << "muY.rows() " << muY.rows() << std::endl;
     assert(n*ny == muY.rows());
     assert(SYY.rows() == muY.rows());
     assert(SYY.cols() == muY.rows());
