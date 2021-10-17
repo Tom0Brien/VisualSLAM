@@ -172,14 +172,14 @@ void bounds_getVTKBounds(const Bounds & bnds, double * bounds){
 
 void bounds_setExtremity(const Bounds & bnds, Bounds & extremity){
 
-    extremity.xmin = -5; //std::min(extremity.xmin, bnds.xmin);
-    extremity.xmax = 5; //std::max(extremity.xmax, bnds.xmax);
+    extremity.xmin = -10; //std::min(extremity.xmin, bnds.xmin);
+    extremity.xmax = 10; //std::max(extremity.xmax, bnds.xmax);
 
-    extremity.ymin = -5; //std::min(extremity.ymin, bnds.ymin);
-    extremity.ymax = 5; //std::max(extremity.ymax, bnds.ymax);
+    extremity.ymin = -10; //std::min(extremity.ymin, bnds.ymin);
+    extremity.ymax = 10; //std::max(extremity.ymax, bnds.ymax);
 
-    extremity.zmin = -5; //std::min(extremity.zmin, bnds.zmin);
-    extremity.zmax = 5; //std::max(extremity.zmax, bnds.zmax);
+    extremity.zmin = -10; //std::min(extremity.zmin, bnds.zmin);
+    extremity.zmax = 10; //std::max(extremity.zmax, bnds.zmax);
 }
 
 void bounds_calculateMaxMinSigmaPoints(Bounds & bnds, const Eigen::VectorXd & murPNn, const Eigen::MatrixXd & SrPNn, const double sigma){
@@ -760,13 +760,12 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     imagePlot_update    (handles.ip, outView);
 
     handles.threeDimRenderer->GetActiveCamera()->Azimuth(0);
-    handles.threeDimRenderer->GetActiveCamera()->Elevation(165);
+    handles.threeDimRenderer->GetActiveCamera()->Elevation(270);
 
     handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(0,0,0);
 
-    double sc = 4;
-    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-4*sc,-4*sc,-4*sc);
-    handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-4);
+    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-16,-10,-16);
+    handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-9);
 
     handles.renderWindow->Render();
     handles.renderWindow->SetWindowName("Confidence ellipses");

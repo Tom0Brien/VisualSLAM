@@ -137,7 +137,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         max_landmarks = 30;
         max_features = 10000;
         max_bad_frames = 5;
-        feature_thresh = 0.00015;
+        feature_thresh = 0.0001;
         initial_pixel_distance_thresh = 150;
         update_pixel_distance_thresh = 1;
         initial_width_thresh = 250;
