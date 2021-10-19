@@ -12,9 +12,9 @@ SCENARIO("measurement model test"){
         ArucoLogLikelihood ll;
 
         // 1 tag measurement
-        Eigen::VectorXd y(8,1);
+        Eigen::VectorXd y(16,1);
         // 1 landmark
-        Eigen::VectorXd x(12+6);
+        Eigen::VectorXd x(12+12);
 
         x <<        0, // x dot
                     0, // y dot
@@ -33,11 +33,25 @@ SCENARIO("measurement model test"){
                     -1.8,
                     0,
                     0,
+                    0,
+                    0.005,
+                    1,
+                    -1.8,
+                    0,
+                    0,
                     0;
 
         std::cout << "x : " << x << std::endl;
 
         y <<    1463,
+                481,
+                1386,
+                480,
+                1389,
+                402,
+                1467,
+                402,
+                1463,
                 481,
                 1386,
                 480,

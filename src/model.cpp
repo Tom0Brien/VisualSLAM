@@ -335,9 +335,9 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
             dTheta =   RZ*RY*S2*RX;
             dPhi   =   RZ*RY*RX*S1;
 
-            JRnc.block(0,0,2,1) = dh_drjcc*(dPhi.transpose()*(rJcNn - rCNn));
-            JRnc.block(0,1,2,1) = dh_drjcc*(dTheta.transpose()*(rJcNn - rCNn));
-            JRnc.block(0,2,2,1) = dh_drjcc*(dPsi.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,0,2,1) = dh_drjcc*Rnc*(dPhi.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,1,2,1) = dh_drjcc*Rnc*(dTheta.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,2,2,1) = dh_drjcc*Rnc*(dPsi.transpose()*(rJcNn - rCNn));
 
             // Landmark rotation jacobian
             rotx(x(12+3+6*param.landmarks_seen[l]),RX);
@@ -454,6 +454,7 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
     int count = 0;
     Eigen::Matrix<double,Eigen::Dynamic,1> g_log(2,1);
     for(int l = 0; l < param.landmarks_seen.size(); l++) {
+        dhdx.setZero();
         // *** State Predicted Centre of Marker Location *** //
         rJNn = x.segment(12+param.landmarks_seen[l]*6,3);
         Thetanj = x.segment(12+3+param.landmarks_seen[l]*6,3);
@@ -497,9 +498,9 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
             dTheta =   RZ*RY*S2*RX;
             dPhi   =   RZ*RY*RX*S1;
 
-            JRnc.block(0,0,2,1) = dh_drjcc*(dPhi.transpose()*(rJcNn - rCNn));
-            JRnc.block(0,1,2,1) = dh_drjcc*(dTheta.transpose()*(rJcNn - rCNn));
-            JRnc.block(0,2,2,1) = dh_drjcc*(dPsi.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,0,2,1) = -dh_drjcc*Rnc*(dPhi.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,1,2,1) = -dh_drjcc*Rnc*(dTheta.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,2,2,1) = -dh_drjcc*Rnc*(dPsi.transpose()*(rJcNn - rCNn));
 
             // Landmark rotation jacobian
             rotx(x(12+3+6*param.landmarks_seen[l]),RX);

@@ -764,7 +764,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
 
     handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(0,0,0);
 
-    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-16,-10,-16);
+    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-20,-20,-20);
     handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-9);
 
     handles.renderWindow->Render();

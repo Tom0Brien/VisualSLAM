@@ -113,7 +113,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         0,                  // Phi dot
                         0,                  // x
                         0,                  // y
-                        -1.8,               // z
+                        0,               // z
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
                         0;                  // Phi
@@ -123,7 +123,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // PROCESS MODEL
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.2, 0.2, 0.2;
+        position_tune.diagonal() <<  0.5, 0.5, 0.175;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
         orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
@@ -134,9 +134,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         slamparam.measurement_noise = 7;
 
         // MAP TUNING
-        max_landmarks = 30;
+        max_landmarks = 50;
         max_features = 10000;
-        max_bad_frames = 5;
+        max_bad_frames = 10;
         feature_thresh = 0.0001;
         initial_pixel_distance_thresh = 150;
         update_pixel_distance_thresh = 1;
@@ -144,7 +144,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         initial_height_thresh = 100;
         // Initilizing landmarks
         optical_ray_length = 8;
-        kappa = 0.75;
+        kappa = 0.5;
 
         slamparam.n_landmark = 3;
         // Initial conditions
@@ -285,6 +285,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 }
                 // ******************************************************** MEASUREMENT UPDATE ********************************************************
                 ArucoLogLikelihood aruco_ll;
+                // arucoLogLikelihoodAnalytical aruco_ll;
                 std::cout << "frame no. : " << count << std::endl;
                 measurementUpdateIEKFSR1(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
                 muEKF   = muf;
@@ -292,9 +293,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
                 if (SEKF.hasNaN() || muEKF.hasNaN()){
                     std::cout << "old" << std::endl;
-                    measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
-                    muEKF   = muf;
-                    SEKF    = Sf;
+                measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
+                muEKF   = muf;
+                SEKF    = Sf;
                 }
 
                 // ready = false;
@@ -581,7 +582,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
         if (interactive == 1) {
             updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
-            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
             if(count == 500) { //no_frames
                 PlotHandles tmpHandles;
                 initPlotStates(muPlot, SPlot, param, tmpHandles,slamparam);
@@ -598,7 +599,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             cv::Mat video_frame = getPlotFrame(handles);
             video.write(video_frame);
         }
-        else if (interactive == 2 && count % 1 == 0)
+        else if ((interactive == 2 && count % 1 == 0) || count == 450)
         {
             // Hack: call twice to get frame to show
             updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
