@@ -28,17 +28,11 @@ bool sortByScore(sortedLandmark const& lhs, sortedLandmark const& rhs) {
         return lhs.keypoint.response > rhs.keypoint.response;
 }
 
-void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, const std::filesystem::path &outputDirectory)
+void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, bool hasExport, const std::filesystem::path &outputDirectory)
 {
     std::filesystem::path outputPath;
-    bool doExport = !outputDirectory.empty();
-
-    if (doExport)
-    {
-        std::string outputFilename = videoPath.stem().string() + "_out" + videoPath.extension().string();
-        outputPath = outputDirectory / outputFilename;
-    }
-
+    std::string outputFilename = videoPath.stem().string() + "_out" + videoPath.extension().string();
+    outputPath = outputDirectory / outputFilename;
     // Open input video at videoPath
     cv::VideoCapture cap(videoPath.string());
     // Output file name
@@ -123,10 +117,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // PROCESS MODEL
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.5, 0.5, 0.175;
+        position_tune.diagonal() <<  0.55, 0.55, 0.175;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
-        orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
+        orientation_tune.diagonal() <<  0.05, 0.05, 0.025;
         slamparam.position_tune = position_tune;
         slamparam.orientation_tune = orientation_tune;
 
@@ -136,7 +130,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // MAP TUNING
         max_landmarks = 50;
         max_features = 10000;
-        max_bad_frames = 10;
+        max_bad_frames = 25;
         feature_thresh = 0.0001;
         initial_pixel_distance_thresh = 150;
         update_pixel_distance_thresh = 1;
@@ -234,6 +228,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 std::vector<Marker> detected_markers;
                 detectAndDrawArUco(frame, imgout, detected_markers, param);
                 // Check all detected markers, if there is a new marker update the state else if max ID not met add ID to list and initialize a new landmark
+
+                // Eigen::VectorXd S = Eigen::VectorXd(mup.rows(),1); // used to enforce negative eigen values in initial hessian
+                // S.fill(1);
                 for(int i = 0; i < detected_markers.size(); i++){
                     // Search list of current markers
                     std::vector<int>::iterator it = std::find(marker_ids.begin(), marker_ids.end(), detected_markers[i].id);
@@ -259,6 +256,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                         muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                         mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
+                        // S.conservativeResizeLike(Eigen::VectorXd::Zero(S.rows()+6,1));
+                        // S.tail(6) << -1,-1,-1,-1,-1,-1;
                         for(int k = 0; k < 6; k++){
                             SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = kappa;
                             Sp(Sp.rows()-6+k,Sp.rows()-6+k) = kappa;
@@ -283,6 +282,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         std::cout << " NEW LANDMARK : " << (n_states-nx)/6 << std::endl;
                     }
                 }
+
+                // slamparam.S = S.asDiagonal();
+                // std::cout << "slamparam.S" << slamparam.S << std::endl;
                 // ******************************************************** MEASUREMENT UPDATE ********************************************************
                 ArucoLogLikelihood aruco_ll;
                 // arucoLogLikelihoodAnalytical aruco_ll;
@@ -293,9 +295,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
                 if (SEKF.hasNaN() || muEKF.hasNaN()){
                     std::cout << "old" << std::endl;
-                measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
-                muEKF   = muf;
-                SEKF    = Sf;
+                    ArucoLogLikelihood aruco_ll;
+                    measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, slamparam, muf, Sf);
+                    muEKF   = muf;
+                    SEKF    = Sf;
                 }
 
                 // ready = false;
@@ -352,8 +355,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 std::cout << "Scenario 2" << std::endl;
                 // ************************************************  TIME UPDATE ************************************************
                 timeUpdateContinuous(muEKF, SEKF, u, pm, slamparam, timestep, mup, Sp);
-                // cv::Mat video_frame = getPlotFrame(handles);
-                // video.write(video_frame);
 
                 // Reset landmarks_seen for plotting
                 slamparam.landmarks_seen.clear();
@@ -427,8 +428,15 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         bool isMatch = i >= 0;
                         temp.queryIdx = j;
                         temp.trainIdx = i;
-                        bool withinRadius = pixelDistance(landmarks,keypoints_found[matches[j].trainIdx],update_pixel_distance_thresh,j);
-                        if(isMatch && res[j] && !withinRadius){
+                        // is the new
+                        // bool withinRadius = pixelDistance(landmarks,keypoints_found[matches[j].trainIdx],update_pixel_distance_thresh,j);
+                        // Check what current landmarks are visible to the camera
+                        Eigen::VectorXd eta = mup.segment(6,6);
+                        Eigen::VectorXd rPNn = mup.segment(12+j*3,3);
+                        Eigen::VectorXd rQOi; // placeholder
+                        bool inCameraCone = (worldToPixel(rPNn,eta,slamparam.camera_param,rQOi) == 0);
+
+                        if(isMatch && res[j]){ //&& !withinRadius
                             // std::cout << "Pixel " << i << " in y located at [ " << potential_measurments(0,i) << "," << potential_measurments(1,i) << "] in imageB, matches with landmark " << j << "." << std::endl;
                             cv::putText(imgout,"J="+std::to_string(j),cv::Point(keypoints_found[matches[j].trainIdx].pt.x+10,keypoints_found[matches[j].trainIdx].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
 
@@ -446,7 +454,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                             landmarks[j].pixel_measurement = potential_measurments.col(j);
                         } else {
                             landmarks[j].isVisible = false;
-                            landmarks[j].score += 1;
+                            // if its in camera cone and failed match, increase the bad association score
+                            if(inCameraCone) {
+                                landmarks[j].score += 1;
+                            }
                         }
                     }
                 }

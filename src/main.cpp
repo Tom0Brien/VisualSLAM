@@ -96,7 +96,7 @@ int main(int argc, char* argv [])
         assert(0 <= interactive && interactive <= 2);
         std::cout << "Running SLAM" << std::endl;
         importCalibrationData(calibrationFilePath, param);
-        runSLAMFromVideo(inputVideoPath, dataFile, param, s, scenario, interactive, outputDirectory);
+        runSLAMFromVideo(inputVideoPath, dataFile, param, s, scenario, interactive, hasExport, outputDirectory);
     }
 
 
