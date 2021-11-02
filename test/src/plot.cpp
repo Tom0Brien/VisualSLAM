@@ -49,21 +49,23 @@ SCENARIO("plot: 4 landmarks"){
     slamparam.n_landmark = 6;
     PlotHandles handles;
 
-    initPlotStates(mu, S, param, handles,slamparam);
-    cv::Mat view;
-    view = cv::imread("data/1023.jpg");
-    updatePlotStates(view, mu, S, param, handles,slamparam);
-    // -------------------------
-    // Attach interactor for playing with the 3d interface
-    // -------------------------
-    vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
-    vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+    bool showPlot = false;
 
-
-    threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
-    threeDimInteractor->SetRenderWindow(handles.renderWindow);
-    threeDimInteractor->Initialize();
-    threeDimInteractor->Start();
+    if(showPlot) {
+        initPlotStates(mu, S, param, handles,slamparam);
+        cv::Mat view;
+        view = cv::imread("data/1023.jpg");
+        updatePlotStates(view, mu, S, param, handles,slamparam);
+        // -------------------------
+        // Attach interactor for playing with the 3d interface
+        // -------------------------
+        vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
+        vtkNew<vtkRenderWindowInteractor> threeDimInteractor;
+        threeDimInteractor->SetInteractorStyle(threeDimInteractorStyle);
+        threeDimInteractor->SetRenderWindow(handles.renderWindow);
+        threeDimInteractor->Initialize();
+        threeDimInteractor->Start();
+    }
 
 }
 
