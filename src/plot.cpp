@@ -738,10 +738,23 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
             rgb(1) = 0;
             rgb(2) = 255;
         } else {
-            hsv2rgb(0., 1., 1., r, g, b);
-            rgb(0) = 255;
-            rgb(1) = 0;
-            rgb(2) = 0;
+            Eigen::Matrix<double, Eigen::Dynamic, 1> eta = mu.segment(6,6);
+            CameraParameters param = slamparam.camera_param;
+            Eigen::Matrix<double, Eigen::Dynamic, 1> rQOi;
+            bool inCone = worldToPixel(murPNn,eta,param,rQOi);
+            if(inCone == 0) {
+                hsv2rgb(0., 1., 1., r, g, b);
+                rgb(0) = 255;
+                rgb(1) = 0;
+                rgb(2) = 0;
+            } else {
+                r = 255;
+                g = 255;
+                b = 0;
+                rgb(0) = 255;
+                rgb(1) = 255;
+                rgb(2) = 0;
+            }
         }
 
         plotFeatureGaussianConfidenceEllipse(outView, murPNn, SrPNn, eta, param, rgb);
