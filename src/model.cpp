@@ -295,17 +295,21 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
         rpy2rot<double>(Thetanj,Rnj);
         // For each corner of the landmark
         for(int c = 0; c < 4; c++) {
+            dhdx.fill(0);
             // *** State Predicted Location of Marker Corner Pixel *** //
             rJcNn = Rnj*rJcJj.col(c) + rJNn;
             int w2p_flag = w2p(rJcNn,eta,param.camera_param,state_pixel,Sw2p,dh_drjcc);
 
-            // Jacobian of the corner of landmark
-            JrPNn = -dh_drjcc*Rnc.transpose();
-
             // Jacobian of the camera position
-            JrCNn = dh_drjcc;
+            JrCNn = -dh_drjcc;
+            // Jacobian of the corner of landmark
+            JrPNn = dh_drjcc;
 
-            // Rotation jacobian
+            // Camera position jacobian
+            dhdx.block(0,6,2,3) = JrCNn;
+            dhdx.block(0,12+6*param.landmarks_seen[l],2,3) = JrPNn;
+
+            // Camera Rotation jacobian
             JRnc.resize(2,3);
             Eigen::MatrixXd S1(3,3);
             Eigen::MatrixXd S2(3,3);
@@ -314,9 +318,6 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
             S2 << 0,0,1,0,0,0,-1,0,0;
             S3 << 0,-1,0,1,0,0,0,0,0;
 
-            Eigen::MatrixXd dPhi= Eigen::MatrixXd::Zero(3,3);
-            Eigen::MatrixXd dTheta= Eigen::MatrixXd::Zero(3,3);
-            Eigen::MatrixXd dPsi= Eigen::MatrixXd::Zero(3,3);
             Eigen::MatrixXd RX = Eigen::MatrixXd::Zero(3,3);
             Eigen::MatrixXd RY= Eigen::MatrixXd::Zero(3,3);
             Eigen::MatrixXd RZ= Eigen::MatrixXd::Zero(3,3);
@@ -324,18 +325,20 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
             rotx(eta(3),RX);
             roty(eta(4),RY);
             rotz(eta(5),RZ);
-            dPsi   =   RZ*S3*RY*RX;
-            dTheta =   RZ*RY*S2*RX;
-            dPhi   =   RZ*RY*RX*S1;
+            Eigen::MatrixXd dPsi   =   RZ*S3*RY*RX;
+            Eigen::MatrixXd dTheta =   RZ*RY*S2*RX;
+            Eigen::MatrixXd dPhi   =   RZ*RY*RX*S1;
 
-            JRnc.block(0,0,2,1) = dh_drjcc*Rnc*(dPhi.transpose()*(rJcNn - rCNn));
-            JRnc.block(0,1,2,1) = dh_drjcc*Rnc*(dTheta.transpose()*(rJcNn - rCNn));
-            JRnc.block(0,2,2,1) = dh_drjcc*Rnc*(dPsi.transpose()*(rJcNn - rCNn));
+            JRnc.block(0,0,2,1) = dh_drjcc*Rnc*dPhi.transpose()*(rJcNn - rCNn);
+            JRnc.block(0,1,2,1) = dh_drjcc*Rnc*dTheta.transpose()*(rJcNn - rCNn);
+            JRnc.block(0,2,2,1) = dh_drjcc*Rnc*dPsi.transpose()*(rJcNn - rCNn);
+
+            dhdx.block(0,9,2,3) = JRnc;
 
             // Landmark rotation jacobian
-            rotx(x(12+3+6*param.landmarks_seen[l]),RX);
-            roty(x(12+4+6*param.landmarks_seen[l]),RY);
-            rotz(x(12+5+6*param.landmarks_seen[l]),RZ);
+            rotx(Thetanj(0),RX);
+            roty(Thetanj(1),RY);
+            rotz(Thetanj(2),RZ);
 
             dPsi   =   RZ*S3*RY*RX;
             dTheta =   RZ*RY*S2*RX;
@@ -343,16 +346,11 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
             JRnm.resize(2,3);
             JRnm.setZero();
 
-            JRnm.block(0,0,2,1) = -dh_drjcc*(dPhi*rJcJj.col(c));
-            JRnm.block(0,1,2,1) = -dh_drjcc*(dTheta*rJcJj.col(c));
-            JRnm.block(0,2,2,1) = -dh_drjcc*(dPsi*rJcJj.col(c));
-
-            // Camera jacobian
-            dhdx.block(0,6,2,3) = JrCNn;
-            dhdx.block(0,9,2,3) = JRnc;
+            JRnm.block(0,0,2,1) = dh_drjcc*(dPhi*rJcJj.col(c));
+            JRnm.block(0,1,2,1) = dh_drjcc*(dTheta*rJcJj.col(c));
+            JRnm.block(0,2,2,1) = dh_drjcc*(dPsi*rJcJj.col(c));
 
             // Landmark jacobian
-            dhdx.block(0,12+6*param.landmarks_seen[l],2,3) = -dh_drjcc;
             dhdx.block(0,12+3+6*param.landmarks_seen[l],2,3) = JRnm;
 
             // *** Measurement Corner Pixel ***//
@@ -363,7 +361,7 @@ double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const E
                 // std::cout << "g logGaussian" << g_log << std::endl;
                 count++;
 
-                Jacobian += dhdx.transpose()*g_log;
+                Jacobian += dhdx.transpose()*-g_log;
             } else {
                 // std::cout << "outside view cone" << std::endl;
             }
@@ -446,6 +444,71 @@ double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Ve
     autodiff::dual2nd fdual;
     auto t_start = std::chrono::high_resolution_clock::now();
     H = autodiff::hessian(pointLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    // std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;
+    return val(fdual);
+}
+
+template <typename Scalar>
+static Scalar duckLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & x, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & u, const SlamParameters & param)
+{
+
+    // Variables
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJNn(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> eta(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> Thetanj(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> Rnj(3,3);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_pixel(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_pixel(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = param.measurement_noise*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    Scalar cost = 0;
+    eta = x.segment(6,6);
+
+    int count = 0;
+
+    for(int j = 0; j < param.ducks.size(); j++) {
+        if(param.ducks[j].isVisible) {
+            // *** State Predicted Landmark Location *** //
+            rJNn = x.segment(12+j*3,3);
+            int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel); // return [2x12]
+            // *** Measurement Point Pixel ***//
+            measurement_pixel = param.ducks[j].pixel_measurement;
+            if(w2p_flag == 0) {
+                double thresh = 25;
+                cost += logGaussian(measurement_pixel,state_pixel, SR);
+            }
+        }
+    }
+    return cost;
+}
+
+double DuckLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param)
+{
+    // Evaluate log N(y;h(x),R)
+    return duckLogLikelihood(y, x, u, param);
+}
+
+
+double DuckLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g)
+{
+    Eigen::Matrix<autodiff::dual,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual>();
+    autodiff::dual fdual;
+    auto t_start = std::chrono::high_resolution_clock::now();
+    g = autodiff::gradient(duckLogLikelihood<autodiff::dual>, wrt(xdual), at(y,xdual,u,param), fdual);
+    auto t_end = std::chrono::high_resolution_clock::now();
+    double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
+    // std::cout << "Time taken for gradient calc [s]: " << elapsed_time_ms/1000 << std::endl;
+    return val(fdual);
+}
+
+double DuckLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd & H)
+{
+    Eigen::Matrix<autodiff::dual2nd,Eigen::Dynamic,1> xdual = x.cast<autodiff::dual2nd>();
+    autodiff::dual2nd fdual;
+    auto t_start = std::chrono::high_resolution_clock::now();
+    H = autodiff::hessian(duckLogLikelihood<autodiff::dual2nd>, wrt(xdual), at(y,xdual,u,param), fdual, g);
     auto t_end = std::chrono::high_resolution_clock::now();
     double elapsed_time_ms = std::chrono::duration<double, std::milli>(t_end-t_start).count();
     // std::cout << "time taken for Hessian/Jacobian calc [s] : " << elapsed_time_ms/1000  << std::endl;

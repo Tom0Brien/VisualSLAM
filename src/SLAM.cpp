@@ -56,6 +56,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     //Initialise the states
     p.camera_states              = 12; // Camera states
+    p.n_landmark = 3;
+    p.max_landmarks = 50;
     // Initialise filter
     Eigen::VectorXd x0(p.camera_states);
     Eigen::VectorXd muEKF(p.camera_states);
@@ -135,6 +137,50 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
                         0;                  // Phi
+    } else if (scenario == 3){
+        std::cout << "Scenario 3" << std::endl;
+        // PROCESS MODEL
+        Eigen::MatrixXd position_tune(3,3);
+        position_tune.setZero();
+        position_tune.diagonal() <<  0.1, 0.1, 0.1;
+        Eigen::MatrixXd orientation_tune(3,3);
+        orientation_tune.setZero();
+        orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
+        p.position_tune = position_tune;
+        p.orientation_tune = orientation_tune;
+        p.camera_states = 12;
+
+        // MEASUREMENT MODEL
+        p.measurement_noise = 2;
+
+        // MAP TUNING
+        p.max_landmarks = 100;
+        p.max_features = 50000;
+        p.max_bad_frames = 10;
+        p.feature_thresh = 0.0001;
+        p.initial_pixel_distance_thresh = 150;
+        p.update_pixel_distance_thresh = 1;
+        p.initial_width_thresh = 250;
+        p.initial_height_thresh = 100;
+        // Initilizing landmarks
+        p.optical_ray_length = 5;
+        p.kappa = 0.1;
+
+        p.n_landmark = 3;
+        // Initial conditions
+        SEKF.diagonal() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
+        muEKF <<        0,                  // x dot
+                        0,                  // y dot
+                        0,                  // z dot
+                        0,                  // Psi dot
+                        0,                  // Theta dot
+                        0,                  // Phi dot
+                        0,                  // x
+                        0,                  // y
+                        -1.8,               // z
+                        0,   // Psi
+                        0,      // Theta
+                        0;                  // Phi
     }
 
     //Initialize the plot states
@@ -155,12 +201,13 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
     cv::Mat frame;
 
-    // Feature/Landmark storage
+    // Scenario 1
     std::vector<int> marker_ids;
     std::vector<Marker> markers;
-
     //Scenario 2
     std::vector<Landmark> landmarks;
+    //Scenario 3
+    std::vector<Duck> ducks;
 
     // ------------------------------------------------------------------------
     // Generate chi2LUT
@@ -307,11 +354,11 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 combineDescriptors(landmark_descriptors,landmarks);
                 matcher.match(landmark_descriptors,descriptors_found,matches);
                 // Store match associations
-                Eigen::MatrixXd potential_measurments;
-                potential_measurments.resize(2,matches.size());
+                Eigen::MatrixXd potential_measurements;
+                potential_measurements.resize(2,matches.size());
                 for(int i = 0; i < matches.size(); i++) {
-                    potential_measurments(0,i) = keypoints_found[matches[i].trainIdx].pt.x;
-                    potential_measurments(1,i) = keypoints_found[matches[i].trainIdx].pt.y;
+                    potential_measurements(0,i) = keypoints_found[matches[i].trainIdx].pt.x;
+                    potential_measurements(1,i) = keypoints_found[matches[i].trainIdx].pt.y;
                 }
 
                 // ********************************************************  DATA ASSOCIATION ********************************************************
@@ -340,13 +387,13 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     affineTransform(mup,Sp,h,muY,SYY);
                     std::vector<bool> res;
                     for(int j = 0; j < matches.size(); j++) {
-                        bool result = individualCompatibility(j,j,2,potential_measurments,muY,SYY,chi2LUT);
+                        bool result = individualCompatibility(j,j,2,potential_measurements,muY,SYY,chi2LUT);
                         res.push_back(result);
                     }
 
                     // Run surprisal nearest neighbours
                     std::vector<int> idx;
-                    snn(mup,Sp,potential_measurments,p.camera_param,idx,false);
+                    snn(mup,Sp,potential_measurements,p.camera_param,idx,false);
 
                     // Populate matches and isCompatible vectors for drawMatches
                     for(int j = 0; j < idx.size(); j++){
@@ -373,7 +420,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                             landmarks[j].descriptor = descriptors_found.row(matches[j].trainIdx);
                             landmarks[j].score = 0;
                             landmarks[j].isVisible = true;
-                            landmarks[j].pixel_measurement = potential_measurments.col(j);
+                            landmarks[j].pixel_measurement = potential_measurements.col(j);
                         } else {
                             landmarks[j].isVisible = false;
                             // if its in camera cone and failed match, increase the bad association score
@@ -455,7 +502,150 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             }
             case 3:
             {
-                // code block
+                std::cout << "Scenario 2" << std::endl;
+                // ********************************************************  TIME UPDATE ********************************************************
+                timeUpdateContinuous(muEKF, SEKF, u, pm, p, timestep, mup, Sp);
+
+                // Reset landmarks_seen for plotting
+                p.landmarks_seen.clear();
+
+                // Initialize variables
+                cv::Mat descriptors_found;
+                std::vector<cv::KeyPoint> keypoints_found;
+                std::vector<int> matches_descriptor_idx;
+                cv::Mat des;
+
+                // ********************************************************  DETECT FEATURES ********************************************************
+                detectDucks(frame, imgout, keypoints_found);
+                // Store match associations
+                Eigen::MatrixXd potential_measurements;
+                potential_measurements.resize(2,keypoints_found.size());
+                for(int i = 0; i < keypoints_found.size(); i++) {
+                    potential_measurements(0,i) = keypoints_found[i].pt.x;
+                    potential_measurements(1,i) = keypoints_found[i].pt.y;
+                }
+                // ********************************************************  DATA ASSOCIATION ********************************************************
+
+                if(mup.rows() - 12 > 0) {
+                    // Run surprisal nearest neighbours
+                    std::vector<int> idx;
+                    snn(mup,Sp,potential_measurements,p.camera_param,idx,false);
+
+                    // Populate matches and isCompatible vectors for drawMatches
+                    for(int j = 0; j < idx.size(); j++){
+                        cv::DMatch temp;
+                        int i = idx[j];
+                        bool isMatch = i >= 0;
+                        temp.queryIdx = j;
+                        temp.trainIdx = i;
+                        // Check what current landmarks are visible to the camera
+                        Eigen::VectorXd eta = mup.segment(6,6);
+                        Eigen::VectorXd rPNn = mup.segment(12+j*3,3);
+                        Eigen::VectorXd rQOi; // placeholder
+                        bool inCameraCone = (worldToPixel(rPNn,eta,p.camera_param,rQOi) == 0);
+
+                        if(isMatch){
+                            // Store list of descriptor indexs we used for landmark update (to exclude from surplus descriptors later)
+                            // Update our current landmarks keypoints, desciptor, score, visiblity and pixel measurement for this frame
+                            cv::KeyPoint duck_keypoint;
+                            duck_keypoint.pt.x = keypoints_found[j].pt.x;
+                            duck_keypoint.pt.y = keypoints_found[j].pt.y;
+                            cv::putText(imgout,"J="+std::to_string(j),cv::Point(keypoints_found[j].pt.x+10,keypoints_found[j].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
+                            ducks[j].keypoint = duck_keypoint;
+                            ducks[j].score = 0;
+                            ducks[j].isVisible = true;
+                            ducks[j].pixel_measurement = potential_measurements.col(j);
+                        } else {
+                            ducks[j].isVisible = false;
+                            ducks[j].score += 1;
+
+                        }
+                    }
+                }
+
+                // ******************************************************** REMOVE BAD LANDMARKS ********************************************************
+                for(int j = 0; j < ducks.size(); j++) {
+                    if(ducks[j].score > p.max_bad_frames) {
+                        cv::putText(imgout,"DELETED LANDMARK  :  "+std::to_string(j),cv::Point(60,260),cv::FONT_HERSHEY_SIMPLEX, 3, cv::Scalar(0, 0, 255),2);
+                        removeBadLandmarks(mup,Sp,ducks,j);
+                        // Reset plot states
+                        muPlot = Eigen::MatrixXd::Zero(muPlot.rows(),1);
+                        SPlot = Eigen::MatrixXd::Zero(muPlot.rows(),muPlot.rows());
+                        j = 0;
+                    }
+                }
+
+                // ******************************************************** ADD NEW LANDMARKS ********************************************************
+
+                for(int i = 0; i < keypoints_found.size(); i++) {
+                    int max_new_landmarks = p.max_landmarks - (mup.rows()-12)/3;
+                    // we have atleast one other landmark
+                    bool withinRadius = false;
+                    if(ducks.size() > 0) {
+                        withinRadius = pixelDistance(ducks,keypoints_found[i],p.initial_pixel_distance_thresh);
+                    }
+
+                    if(max_new_landmarks > 0 && !withinRadius) {
+                        int n_states = mup.rows();
+                        //Reize the state and predicted state matrix
+                        SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
+                        Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,n_states+3));
+                        muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,1));
+                        mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+3,1));
+                        for(int k = 0; k < 3; k++){
+                            SEKF(SEKF.rows()-3+k,SEKF.rows()-3+k) = p.kappa;
+                            Sp(Sp.rows()-3+k,Sp.rows()-3+k) = p.kappa;
+                        }
+
+                        // Add initial good guess
+                        Eigen::MatrixXd pixel(2,1);
+                        pixel << keypoints_found[i].pt.x, keypoints_found[i].pt.y;
+                        Eigen::MatrixXd rPCc = generateOpticalRay(p.camera_param, pixel, p);
+                        // Transform to world space
+                        Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanc;
+                        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnc;
+                        Thetanc = mup.segment(9,3);
+                        rpy2rot(Thetanc, Rnc);
+                        Eigen::VectorXd point(3,1);
+                        point = mup.segment(6,3) + Rnc*rPCc;
+                        mup.tail(3) << point;
+
+                        // Add new landmark to our landmark list
+                        Duck new_duck;
+                        new_duck.keypoint = keypoints_found[i];
+                        new_duck.pixel_measurement = pixel;
+                        new_duck.isVisible = true;
+                        ducks.push_back(new_duck);
+                    }
+                }
+
+                // Add landmarks seen to p.landmarks_seen for plotting
+                for(int i = 0; i < ducks.size(); i++){
+                    std::cout <<" score : " << ducks[i].score << std::endl;
+                    if(ducks[i].isVisible) {
+                        p.landmarks_seen.push_back(i);
+                    }
+                }
+
+                // cv::putText(imgout,"frame no. : "+std::to_string(count),cv::Point(60,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
+                // cv::putText(imgout,"Number of current landmarks "+std::to_string((mup.rows()-12)/3)+"/"+std::to_string(p.max_landmarks),cv::Point(60,100),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
+                // cv::putText(imgout,"Number of seen landmarks "+std::to_string(p.landmarks_seen.size()),cv::Point(60,140),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
+                // cv::putText(imgout,"World Position (N,E,D) :  ("+std::to_string(muEKF(6))+","+std::to_string(muEKF(7))+","+std::to_string(muEKF(8))+")",cv::Point(60,170),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
+                // cv::putText(imgout,"World Orientation (phi,theta,psi)  :  ("+std::to_string(muEKF(9))+","+std::to_string(muEKF(10))+","+std::to_string(muEKF(11))+")",cv::Point(60,200),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
+
+                // // ******************************************************** MEASUREMENT UPDATE ********************************************************
+                p.ducks = ducks;
+                DuckLogLikelihood point_ll;
+                measurementUpdateIEKF(mup, Sp, u, yk, point_ll, p, muf, Sf);
+                // measurementUpdateIEKFSR1(mup, Sp, u, yk, point_ll, p, muf, Sf);
+                muEKF   = muf;
+                SEKF    = Sf;
+
+                if (SEKF.hasNaN() || muEKF.hasNaN()){
+                    measurementUpdateIEKF(mup, Sp, u, yk, point_ll, p, muf, Sf);
+                    muEKF   = muf;
+                    SEKF    = Sf;
+                }
                 break;
             }
             default:
@@ -577,6 +767,22 @@ bool pixelDistance(std::vector<Landmark> & landmarks, cv::KeyPoint keypoint, dou
     return withinRadius;
 }
 
+bool pixelDistance(std::vector<Duck> & ducks, cv::KeyPoint keypoint, double pixel_distance_thresh){
+    //loop through the all the current keypoints initisised and check if its far away
+    bool withinRadius = false;
+    cv::Point2f b(keypoint.pt.x, keypoint.pt.y);
+    // loop through the landmarks just initilised and all the current landmarks
+    for(int i; i < ducks.size(); i++){
+        cv::Point2f a(ducks[i].keypoint.pt.x, ducks[i].keypoint.pt.y);
+        cv::Point2f diff = a - b;
+        double dist = cv::sqrt(diff.x*diff.x + diff.y*diff.y);
+        if(dist < pixel_distance_thresh) {
+            withinRadius = true;
+        }
+    }
+    return withinRadius;
+}
+
 bool pixelDistance(std::vector<Landmark> & landmarks, cv::KeyPoint keypoint, double pixel_distance_thresh, int landmark_index){
     //loop through the all the current keypoints initisised and check if its far away
     bool withinRadius = false;
@@ -599,6 +805,32 @@ void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector
     int camera_states = 12; //camera states
     // remove landmark from vector
     landmarks.erase(landmarks.begin()+j);
+
+    // remove landmark keypoints
+    for(int i = 0; i < 3; i++){
+        //remove landmark states from mu
+        removeRow(mup,camera_states+j*3);
+        //remove the columns of the covariance matrix for landmark
+        removeColumn(Sp,camera_states+j*3);
+    }
+
+    // perform QR decomposition on S to get correct dimensions
+    Eigen::HouseholderQR<Eigen::MatrixXd> qr(Sp);
+    Eigen::MatrixXd R;
+    R.setZero();
+    R = qr.matrixQR().triangularView<Eigen::Upper>();
+    // std::cout << "R" << R << std::endl;
+    Eigen::MatrixXd S(Sp.cols(), Sp.cols());
+    S.setZero();
+    S = R.block(0,0,Sp.cols(),Sp.cols());
+    //overwrite the old covariance
+    Sp = S;
+}
+
+void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector<Duck> & ducks, int j) {
+    int camera_states = 12; //camera states
+    // remove landmark from vector
+    ducks.erase(ducks.begin()+j);
 
     // remove landmark keypoints
     for(int i = 0; i < 3; i++){
