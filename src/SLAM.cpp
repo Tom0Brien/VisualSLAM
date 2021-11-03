@@ -117,10 +117,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // PROCESS MODEL
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.55, 0.55, 0.175;
+        position_tune.diagonal() <<  0.5, 0.5, 0.175;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
-        orientation_tune.diagonal() <<  0.05, 0.05, 0.025;
+        orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
         slamparam.position_tune = position_tune;
         slamparam.orientation_tune = orientation_tune;
 
@@ -129,8 +129,8 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
         // MAP TUNING
         max_landmarks = 50;
-        max_features = 10000;
-        max_bad_frames = 25;
+        max_features = 50000;
+        max_bad_frames = 10;
         feature_thresh = 0.0001;
         initial_pixel_distance_thresh = 150;
         update_pixel_distance_thresh = 1;
@@ -455,9 +455,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         } else {
                             landmarks[j].isVisible = false;
                             // if its in camera cone and failed match, increase the bad association score
-                            if(inCameraCone) {
+                            // if(inCameraCone) {
                                 landmarks[j].score += 1;
-                            }
+                            // }
                         }
                     }
                 }
@@ -594,7 +594,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         if (interactive == 1) {
             updatePlotStates(imgout, muPlot, SPlot, param, handles,slamparam);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            if(count == 500) { //no_frames
+            if(count == no_frames) { //
                 PlotHandles tmpHandles;
                 initPlotStates(muPlot, SPlot, param, tmpHandles,slamparam);
                 updatePlotStates(imgout, muPlot, SPlot, param, tmpHandles,slamparam);
@@ -607,8 +607,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 video.release();
                 return;
             }
-            cv::Mat video_frame = getPlotFrame(handles);
-            video.write(video_frame);
+            if(hasExport){
+                cv::Mat video_frame = getPlotFrame(handles);
+                video.write(video_frame);
+            }
         }
         else if ((interactive == 2 && count % 1 == 0) || count == 450)
         {
@@ -627,8 +629,10 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
         } else {
             updatePlotStates(imgout, muPlot, SPlot, param, handles, slamparam);
-            cv::Mat video_frame = getPlotFrame(handles);
-            video.write(video_frame);
+            if(hasExport){
+                cv::Mat video_frame = getPlotFrame(handles);
+                video.write(video_frame);
+            }
         }
 
         if (SEKF.hasNaN() || muEKF.hasNaN()){
