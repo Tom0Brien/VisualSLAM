@@ -33,6 +33,12 @@
 #include "model.hpp"
 
 
+struct sortedLandmark
+{
+    cv::Mat descriptor;
+    cv::KeyPoint keypoint;
+};
+
 void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &cameraDataPath, const CameraParameters & param, Settings& s, int scenario, int interactive, bool hasExport, const std::filesystem::path &outputDirectory);
 cv::Mat getPlotFrame(const PlotHandles &handles);
 void plot(cv::Mat & imgout, Eigen::MatrixXd & muPlot, Eigen::MatrixXd & SPlot, SlamParameters & slamparam, CameraParameters & param, int interactive, cv::VideoWriter & video);
@@ -42,5 +48,7 @@ void removeBadLandmarks(Eigen::VectorXd & mup, Eigen::MatrixXd & Sp, std::vector
 void removeRow(Eigen::VectorXd & vector, unsigned int rowToRemove);
 void removeColumn(Eigen::MatrixXd & matrix, unsigned int colToRemove);
 void  combineDescriptors(cv::Mat & landmark_descriptors, std::vector<Landmark> & landmarks);
-Eigen::MatrixXd generateOpticalRay(const CameraParameters & param, Eigen::MatrixXd & pixel);
+Eigen::MatrixXd generateOpticalRay(const CameraParameters & param, Eigen::MatrixXd & pixel, SlamParameters p);
+void initializeNewLandmark(cv::Mat & img, Eigen::VectorXd & mup, Eigen::MatrixXd & Sp,Eigen::VectorXd & muEKF, Eigen::MatrixXd & SEKF, std::vector<sortedLandmark> sorted_landmarks, std::vector<Landmark> & landmarks, SlamParameters p, int i);
+void initializeNewMarker(Eigen::VectorXd & yk, Eigen::VectorXd & mup, Eigen::MatrixXd & Sp,Eigen::VectorXd & muEKF, Eigen::MatrixXd & SEKF,std::vector<Marker> & detected_markers, std::vector<int> & marker_ids, SlamParameters p, int i);
 #endif
