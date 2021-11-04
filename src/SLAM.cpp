@@ -68,17 +68,17 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         std::cout << "Scenario 1" << std::endl;
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.1, 0.1, 0.1;
+        position_tune.diagonal() <<  0.3, 0.2, 0.3;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
-        orientation_tune.diagonal() <<  0.1, 0.1, 0.1;
+        orientation_tune.diagonal() <<  0.2, 0.2, 0.2;
         p.position_tune = position_tune;
         p.orientation_tune = orientation_tune;
         p.n_landmark = 6;
-        p.measurement_noise = 10;
+        p.measurement_noise = 1.5;
         p.max_landmarks = 150;
         p.max_features = 100;
-        p.kappa = 0.4;
+        p.kappa = 0.5;
 
         muEKF <<        0,                  // x dot
                         0,                  // y dot
@@ -88,11 +88,11 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         0,                  // Phi dot
                         0,                  // x
                         0,                  // y
-                        0,               // z
+                        -1.8,               // z
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
                         0;                  // Phi
-        SEKF.diagonal() <<  2e-1, 2e-1, 2e-1, 2e-1, 2e-1, 2e-1, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3;
+        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
@@ -275,42 +275,45 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         // Add new landmark
                         // initializeNewMarker(yk,mup,Sp,muEKF,SEKF,detected_markers,marker_ids,p,i);
                         // Add new landmark to now seen list
-                        marker_ids.push_back(detected_markers[i].id);
-                        // Resize the state and predicted state matrix
-                        int n_states = muEKF.rows();
-                        SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
-                        Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
-                        muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                        mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                        // S.conservativeResizeLike(Eigen::VectorXd::Zero(S.rows()+6,1));
-                        // S.tail(6) << -1,-1,-1,-1,-1,-1;
-                        for(int k = 0; k < 6; k++){
-                            SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = p.kappa;
-                            Sp(Sp.rows()-6+k,Sp.rows()-6+k) = p.kappa;
-                        }
-                        // Add initial good guess
-                        Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanj;
-                        Eigen::Matrix<double, Eigen::Dynamic, 1> rJNn;
-                        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnj;
-                        Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanc;
-                        Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnc;
+                        bool not_close_to_edge = (detected_markers[i].corners[0].x > 100) && (detected_markers[i].corners[0].x < 1820) && (detected_markers[i].corners[0].y > 100) && (detected_markers[i].corners[0].y < 980);
+                        if(not_close_to_edge){
+                            marker_ids.push_back(detected_markers[i].id);
+                            // Resize the state and predicted state matrix
+                            int n_states = muEKF.rows();
+                            SEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
+                            Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
+                            muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
+                            mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
+                            // S.conservativeResizeLike(Eigen::VectorXd::Zero(S.rows()+6,1));
+                            // S.tail(6) << -1,-1,-1,-1,-1,-1;
+                            for(int k = 0; k < 6; k++){
+                                SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = p.kappa;
+                                Sp(Sp.rows()-6+k,Sp.rows()-6+k) = p.kappa;
+                            }
+                            // Add initial good guess
+                            Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanj;
+                            Eigen::Matrix<double, Eigen::Dynamic, 1> rJNn;
+                            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnj;
+                            Eigen::Matrix<double, Eigen::Dynamic, 1> Thetanc;
+                            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> Rnc;
 
-                        Thetanc = mup.block(9,0,3,1);
-                        rpy2rot(Thetanc, Rnc);
-                        Rnj = Rnc*detected_markers[i].Rcm;
-                        rot2rpy(Rnj,Thetanj);
-                        rJNn = mup.segment(6,3) + Rnc*detected_markers[i].rMCc;
-                        mup.block(mup.rows()-6,0,6,1) << rJNn, Thetanj;
-                        // Add marker corner measurements to vector yk
-                        int n_measurements = yk.rows();
-                        yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+8,1));
-                        for(int c = 0; c < 4; c++) {
-                            Eigen::Vector2d rJcNn;
-                            rJcNn << detected_markers[i].corners[c].x, detected_markers[i].corners[c].y;
-                            yk.block(n_measurements+c*2,0,2,1) = rJcNn;
+                            Thetanc = mup.block(9,0,3,1);
+                            rpy2rot(Thetanc, Rnc);
+                            Rnj = Rnc*detected_markers[i].Rcm;
+                            rot2rpy(Rnj,Thetanj);
+                            rJNn = mup.segment(6,3) + Rnc*detected_markers[i].rMCc;
+                            mup.block(mup.rows()-6,0,6,1) << rJNn, Thetanj;
+                            // Add marker corner measurements to vector yk
+                            int n_measurements = yk.rows();
+                            yk.conservativeResizeLike(Eigen::MatrixXd::Zero(n_measurements+8,1));
+                            for(int c = 0; c < 4; c++) {
+                                Eigen::Vector2d rJcNn;
+                                rJcNn << detected_markers[i].corners[c].x, detected_markers[i].corners[c].y;
+                                yk.block(n_measurements+c*2,0,2,1) = rJcNn;
+                            }
+                            // Add index j to landmark seen vector
+                            p.landmarks_seen.push_back((n_states-p.camera_states)/6);
                         }
-                        // Add index j to landmark seen vector
-                        p.landmarks_seen.push_back((n_states-p.camera_states)/6);
                     }
                 }
 
@@ -688,7 +691,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 video.write(video_frame);
             }
         }
-        else if ((interactive == 2 && count % 1 == 0) || count == 450)
+        else if ((interactive == 2 && count % 1 == 0) || count == 1000)
         {
             // Hack: call twice to get frame to show
             updatePlotStates(imgout, muPlot, SPlot, param, handles,p);
