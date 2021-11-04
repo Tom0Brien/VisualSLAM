@@ -132,6 +132,7 @@ void calibrateCameraFromVideo(const std::filesystem::path &videoPath, const std:
         std::vector<cv::Point2f> rQOi;
 
         if (detectChessBoard(view, rQOi)){
+
             rQOi_set.push_back(rQOi);
             std::cout << "Found chess board corners in frame: " << count <<std::endl;
             count += 1;
@@ -167,6 +168,10 @@ bool detectChessBoard(const cv::Mat & view, std::vector<cv::Point2f> & rQOi ){
     cv::Mat img_gray;
     cv::cvtColor(view, img_gray, cv::COLOR_BGR2GRAY);
     bool patternfound = findChessboardCorners(img_gray, patternsize, rQOi);
+    if(patternfound){
+        cv::TermCriteria termcrit(cv::TermCriteria::MAX_ITER|cv::TermCriteria::EPS,30,0.0001);
+        cv::cornerSubPix(img_gray, rQOi, cv::Size(11, 11), cv::Size(-1, -1), termcrit);
+    }
     return patternfound;
 }
 
@@ -411,7 +416,7 @@ int WorldToPixelAdaptor::operator()(const Eigen::VectorXd & rPNn, const Eigen::V
     Eigen::MatrixXd dvdr;
     dudr.resize(1,3);
     dvdr.resize(1,3);
-    if(z == 0){
+    if(z < 0){
         dudr << 0,0,0;
         dvdr << 0,0,0;
     } else {

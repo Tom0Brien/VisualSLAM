@@ -27,7 +27,7 @@ bool sortById(Marker const& lhs, Marker const& rhs) {
 
 int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & detected_markers,const CameraParameters & param){
 
-     std::vector<int> markerIds;
+    std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
     cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
     parameters->cornerRefinementWinSize = 10;
@@ -92,6 +92,39 @@ int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat 
     }
     imgout = img;
     return 0;
+
+}
+
+void detectDucks(cv::Mat img, cv::Mat & imgout, std::vector<cv::KeyPoint> & keypoints) {
+    using namespace cv;
+    // Read image
+    Mat img_gray;
+    cv::cvtColor(img, img_gray,cv::COLOR_BGR2GRAY);
+
+    // Set up the detector with default parameters.
+    SimpleBlobDetector::Params parameters = SimpleBlobDetector::Params();
+    // Change thresholds
+    parameters.filterByColor = true;
+    parameters.blobColor = 255;
+    parameters.filterByArea = true;
+    parameters.filterByCircularity = false;
+    parameters.filterByConvexity  = false;
+    parameters.filterByInertia  = true;
+    parameters.minInertiaRatio = 0.3;
+    parameters.minArea = 325;
+    parameters.minThreshold = 100;
+    parameters.maxThreshold = 200;
+
+    cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(parameters);
+    detector->detect(img, keypoints );
+
+
+    // Draw detected blobs as red circles.
+    // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures the size of the circle corresponds to the size of blob
+    Mat im_with_keypoints;
+    drawKeypoints(img, keypoints, im_with_keypoints, Scalar(255,255,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+
+    imgout = im_with_keypoints;
 
 }
 

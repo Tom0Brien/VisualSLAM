@@ -26,11 +26,15 @@ struct Landmark {
     int score = 0;
 };
 
+struct Duck {
+    bool isVisible = false;
+    cv::KeyPoint keypoint;
+    Eigen::VectorXd pixel_measurement;
+    int score = 0;
+};
 
-
-int detectAndDrawHarris(cv::Mat img, cv::Mat & imgout, int maxNumFeatures);
-int detectAndDrawShiAndTomasi(cv::Mat img, cv::Mat & imgout, int maxNumFeatures);
 int detectAndDrawArUco(cv::Mat img, cv::Mat & imgout, std::vector<Marker> & detected_markers,const CameraParameters & param);
 int detectAndDrawORB(cv::Mat img, cv::Mat & imgout, int maxNumFeatures, cv::Mat & descriptors, std::vector<cv::KeyPoint> & keypoints);
+void detectDucks(cv::Mat img, cv::Mat & imgout, std::vector<cv::KeyPoint> & keypoints);
 
 #endif

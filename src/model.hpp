@@ -18,6 +18,19 @@ struct SlamParameters
     Eigen::MatrixXd orientation_tune;
     double measurement_noise;
     std::vector<Landmark> landmarks;
+    std::vector<Duck> ducks;
+
+    int max_landmarks; // Maximum number of landmarks
+    double kappa; // Initial covariance for new landmarks
+    double optical_ray_length; // Length of point on optical ray that landmarks are initialized
+    int max_features; // Maximum number of features the feature detector obtains
+    int max_bad_frames; // Maximum number of frames before a landmark is deleted
+    double feature_thresh; // Threshold to initialize a new landmark
+    double initial_pixel_distance_thresh; // Distance a landmark needs to be from all other landmarks to be initialized
+    double update_pixel_distance_thresh; // Distance a landmark needs to be from all other landmarks to be updated
+    double initial_width_thresh; // Distance a landmark needs to be from border of screen to be initialized
+    double initial_height_thresh; // Distance a landmark needs to be from border of screen to be initialized
+    int camera_states;
 };
 
 struct SlamProcessModel
@@ -28,13 +41,6 @@ struct SlamProcessModel
     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & f, Eigen::MatrixXd & SQ, Eigen::MatrixXd &dfdx);
 };
 
-// struct SlamMeasurementModel
-// {
-//     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & h);
-//     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & h, Eigen::MatrixXd & SR);
-//     void operator()(const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd & h, Eigen::MatrixXd & SR, Eigen::MatrixXd & dhdx);
-// };
-
 struct ArucoLogLikelihood
 {
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param);
@@ -43,6 +49,13 @@ struct ArucoLogLikelihood
 };
 
 struct PointLogLikelihood
+{
+    double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param);
+    double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g);
+    double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H);
+};
+
+struct DuckLogLikelihood
 {
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param);
     double operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g);

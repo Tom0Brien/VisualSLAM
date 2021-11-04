@@ -225,20 +225,6 @@ double ArucoLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Ve
     return val(fdual);
 }
 
-// #include <autodiff/reverse/var.hpp>
-// #include <autodiff/reverse/var/eigen.hpp>
-
-// double ArucoLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
-// {
-//     Eigen::Matrix<autodiff::var,Eigen::Dynamic,1>  xvar = x.cast<autodiff::var>();
-//     Eigen::Matrix<autodiff::var,Eigen::Dynamic,1>  yvar = y.cast<autodiff::var>();
-//     Eigen::Matrix<autodiff::var,Eigen::Dynamic,1>  uvar = u.cast<autodiff::var>();
-//     autodiff::var fvar = slamLogLikelihood(yvar,xvar,uvar,param);
-//     std::cout << " here" << std::endl;
-//     H = hessian(fvar, xvar, g);
-//     return val(fvar);
-// }
-
 double arucoLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g)
 {
 
@@ -456,28 +442,38 @@ static Scalar duckLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, 
 
     // Variables
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJNn(3,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> rCNn(3,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> eta(3,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> Thetanj(3,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> Rnj(3,3);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> rJcNn(3,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_pixel(2,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_pixel(2,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> measurement_area(1,1);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,1> state_area(1,1);
     Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SR = param.measurement_noise*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> SA = 2*Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic>::Identity(1,1);
     Scalar cost = 0;
     eta = x.segment(6,6);
+    rCNn = x.segment(6,3);
+
 
     int count = 0;
+    Scalar fx = param.camera_param.Kc.at<double>(0,0);
+    Scalar fy = param.camera_param.Kc.at<double>(1,1);
 
     for(int j = 0; j < param.ducks.size(); j++) {
         if(param.ducks[j].isVisible) {
             // *** State Predicted Landmark Location *** //
             rJNn = x.segment(12+j*3,3);
-            int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel); // return [2x12]
+            int w2p_flag = worldToPixel(rJNn,eta,param.camera_param,state_pixel);
             // *** Measurement Point Pixel ***//
             measurement_pixel = param.ducks[j].pixel_measurement;
+            measurement_area(0) = 0.25*M_PI*param.ducks[j].keypoint.size*param.ducks[j].keypoint.size; // Area of a circle ? maf
+            state_area(0) = (fx*fy*M_PI*0.0325*0.0325)/((rCNn-rJNn).squaredNorm());
+            // measurement_area(0) = 3.142*param.ducks[j].keypoint.size*param.ducks[j].keypoint.size; // Area of a circle ? maf
             if(w2p_flag == 0) {
-                double thresh = 25;
-                cost += logGaussian(measurement_pixel,state_pixel, SR);
+                cost += logGaussian(measurement_pixel,state_pixel, SR); // + logGaussian(measurement_area,state_area,SA);
             }
         }
     }

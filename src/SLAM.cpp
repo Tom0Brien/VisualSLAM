@@ -68,17 +68,17 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         std::cout << "Scenario 1" << std::endl;
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.3, 0.3, 0.3;
+        position_tune.diagonal() <<  0.1, 0.1, 0.1;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
-        orientation_tune.diagonal() <<  0.2, 0.2, 0.2;
+        orientation_tune.diagonal() <<  0.1, 0.1, 0.1;
         p.position_tune = position_tune;
         p.orientation_tune = orientation_tune;
         p.n_landmark = 6;
-        p.measurement_noise = 20;
+        p.measurement_noise = 10;
         p.max_landmarks = 150;
         p.max_features = 100;
-        p.kappa = 0.5;
+        p.kappa = 0.4;
 
         muEKF <<        0,                  // x dot
                         0,                  // y dot
@@ -92,7 +92,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
                         0;                  // Phi
-        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
+        SEKF.diagonal() <<  2e-1, 2e-1, 2e-1, 2e-1, 2e-1, 2e-1, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3, 1e-3;
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
@@ -142,7 +142,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // PROCESS MODEL
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.1, 0.1, 0.1;
+        position_tune.diagonal() <<  0.2, 0.2, 0.2;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
         orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
@@ -151,24 +151,24 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         p.camera_states = 12;
 
         // MEASUREMENT MODEL
-        p.measurement_noise = 2;
+        p.measurement_noise = 8;
 
         // MAP TUNING
-        p.max_landmarks = 100;
+        p.max_landmarks = 50;
         p.max_features = 50000;
-        p.max_bad_frames = 10;
+        p.max_bad_frames = 100;
         p.feature_thresh = 0.0001;
         p.initial_pixel_distance_thresh = 150;
         p.update_pixel_distance_thresh = 1;
         p.initial_width_thresh = 250;
         p.initial_height_thresh = 100;
         // Initilizing landmarks
-        p.optical_ray_length = 5;
+        p.optical_ray_length = 3;
         p.kappa = 0.1;
 
         p.n_landmark = 3;
         // Initial conditions
-        SEKF.diagonal() << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
+        SEKF.diagonal() << 1e-2, 1e-2, 1e-2, 9e-1, 9e-1, 9e-1, 5e-2, 5e-2, 5e-2, 1e-2, 1e-2, 1e-2;
         muEKF <<        0,                  // x dot
                         0,                  // y dot
                         0,                  // z dot
@@ -177,7 +177,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         0,                  // Phi dot
                         0,                  // x
                         0,                  // y
-                        -1.8,               // z
+                        -1,               // z
                         0,   // Psi
                         0,      // Theta
                         0;                  // Phi
@@ -502,7 +502,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             }
             case 3:
             {
-                std::cout << "Scenario 2" << std::endl;
+                std::cout << "Scenario 3" << std::endl;
                 // ********************************************************  TIME UPDATE ********************************************************
                 timeUpdateContinuous(muEKF, SEKF, u, pm, p, timestep, mup, Sp);
 
@@ -517,6 +517,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
                 // ********************************************************  DETECT FEATURES ********************************************************
                 detectDucks(frame, imgout, keypoints_found);
+
                 // Store match associations
                 Eigen::MatrixXd potential_measurements;
                 potential_measurements.resize(2,keypoints_found.size());
@@ -531,18 +532,16 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     std::vector<int> idx;
                     snn(mup,Sp,potential_measurements,p.camera_param,idx,false);
 
-                    // Populate matches and isCompatible vectors for drawMatches
                     for(int j = 0; j < idx.size(); j++){
-                        cv::DMatch temp;
                         int i = idx[j];
                         bool isMatch = i >= 0;
-                        temp.queryIdx = j;
-                        temp.trainIdx = i;
                         // Check what current landmarks are visible to the camera
                         Eigen::VectorXd eta = mup.segment(6,6);
                         Eigen::VectorXd rPNn = mup.segment(12+j*3,3);
                         Eigen::VectorXd rQOi; // placeholder
                         bool inCameraCone = (worldToPixel(rPNn,eta,p.camera_param,rQOi) == 0);
+
+                        std::cout << "state pixel : " << rQOi << std::endl;
 
                         if(isMatch){
                             // Store list of descriptor indexs we used for landmark update (to exclude from surplus descriptors later)
@@ -550,19 +549,18 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                             cv::KeyPoint duck_keypoint;
                             duck_keypoint.pt.x = keypoints_found[j].pt.x;
                             duck_keypoint.pt.y = keypoints_found[j].pt.y;
-                            cv::putText(imgout,"J="+std::to_string(j),cv::Point(keypoints_found[j].pt.x+10,keypoints_found[j].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
+                            cv::putText(imgout,"J="+std::to_string(i),cv::Point(keypoints_found[i].pt.x+10,keypoints_found[i].pt.y+10),cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(255, 0, 0),2);
                             ducks[j].keypoint = duck_keypoint;
                             ducks[j].score = 0;
                             ducks[j].isVisible = true;
-                            ducks[j].pixel_measurement = potential_measurements.col(j);
+                            ducks[j].pixel_measurement = potential_measurements.col(i);
+                            std::cout << "measured pixel : " << potential_measurements.col(i) << std::endl;
                         } else {
                             ducks[j].isVisible = false;
                             ducks[j].score += 1;
-
                         }
                     }
                 }
-
                 // ******************************************************** REMOVE BAD LANDMARKS ********************************************************
                 for(int j = 0; j < ducks.size(); j++) {
                     if(ducks[j].score > p.max_bad_frames) {
@@ -621,7 +619,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
                 // Add landmarks seen to p.landmarks_seen for plotting
                 for(int i = 0; i < ducks.size(); i++){
-                    std::cout <<" score : " << ducks[i].score << std::endl;
                     if(ducks[i].isVisible) {
                         p.landmarks_seen.push_back(i);
                     }
@@ -636,8 +633,9 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // // ******************************************************** MEASUREMENT UPDATE ********************************************************
                 p.ducks = ducks;
                 DuckLogLikelihood point_ll;
-                measurementUpdateIEKF(mup, Sp, u, yk, point_ll, p, muf, Sf);
-                // measurementUpdateIEKFSR1(mup, Sp, u, yk, point_ll, p, muf, Sf);
+                // measurementUpdateIEKF(mup, Sp, u, yk, point_ll, p, muf, Sf);
+
+                measurementUpdateIEKFSR1(mup, Sp, u, yk, point_ll, p, muf, Sf);
                 muEKF   = muf;
                 SEKF    = Sf;
 
@@ -988,3 +986,4 @@ void initializeNewMarker(Eigen::VectorXd & yk, Eigen::VectorXd & mup, Eigen::Mat
     // Add index j to landmark seen vector
     p.landmarks_seen.push_back((n_states-p.camera_states)/6);
 }
+

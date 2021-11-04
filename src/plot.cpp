@@ -773,7 +773,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     imagePlot_update    (handles.ip, outView);
 
     handles.threeDimRenderer->GetActiveCamera()->Azimuth(0);
-    handles.threeDimRenderer->GetActiveCamera()->Elevation(270);
+    handles.threeDimRenderer->GetActiveCamera()->Elevation(360);
 
     handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(0,0,0);
 

@@ -129,6 +129,9 @@ SCENARIO("Calling analytical and autodiff measurment model with 2 measurements a
         double cost_auto = ll(y, x, u, slamparam, g, H);
         double cost_ana = ll_analytical(y, x, u, slamparam, g_analytical,H_analytical);
 
+        // std::cout << "g : " << g << std::endl;
+        // std::cout << "g_analytical : " << g_analytical << std::endl;
+
         THEN("Jacobians the same") {
             REQUIRE(g.rows() == x.rows());
             REQUIRE(g.cols() == 1);
