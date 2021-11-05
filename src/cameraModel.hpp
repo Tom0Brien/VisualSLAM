@@ -13,7 +13,7 @@ struct CameraParameters{
     cv::Mat Kc;                 // Camera Matrix
     cv::Mat distCoeffs;         // Distortion coefficients
     int flag            = 0;    // Calibration flag
-    double fieldOfView  = 150;  // Describe the arc of the view cone
+    double fieldOfView  = 120;  // Describe the arc of the view cone
     cv::Size imageSize;         // Image size
     // Read and write methods required for class serialisation
     void read(const cv::FileNode & node);
@@ -22,31 +22,12 @@ struct CameraParameters{
     void print() const;
 };
 
-// ---------------------------------------------------------------------
-//
-// Camera calibration
-//
-// ---------------------------------------------------------------------
-
-// bool detectChessBoard(const Settings & s, const cv::Mat & view, std::vector<cv::Point2f> & rQOi);
-// void calibrateCameraFromImageSet(const Settings & s, CameraParameters & param);
-// void exportCalibrationData(const std::filesystem::path & calibrationFilePath, const CameraParameters & param);
-// void importCalibrationData(const std::filesystem::path & calibrationFilePath, CameraParameters & param);
-// bool getPoseFromCheckerBoardImage(const cv::Mat & view const CameraParameters & param, Eigen::VectorXd & eta);
-// void runCalibration(const Settings & s, const std::vector<std::vector<cv::Point2f>> & rQOi_set,  const cv::Size & imageSize, CameraParameters & param);
-// void showCalibrationDataVTK(const Settings & s, const CameraParameters & param);
 
 void calibrateCameraFromVideo(const std::filesystem::path &videoPath, const std::filesystem::path &dataPath, Settings& s);
 bool detectChessBoard(const cv::Mat & view, std::vector<cv::Point2f> & rQOi );
 void runCalibration(const Settings & s, const std::vector<std::vector<cv::Point2f>> & rQOi_set,  const cv::Size & imageSize, CameraParameters & param);
 void generateCalibrationGrid(const Settings & s, std::vector<cv::Point3f> & rPNn_grid);
 void importCalibrationData(const std::filesystem::path & calibrationFilePath, CameraParameters & param);
-
-// ---------------------------------------------------------------------
-//
-// worldToPixel
-//
-// ---------------------------------------------------------------------
 
 template<typename Scalar>
 int worldToPixel(const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rPNn, const Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & eta, const CameraParameters & param, Eigen::Matrix<Scalar, Eigen::Dynamic, 1> & rQOi){

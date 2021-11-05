@@ -68,17 +68,17 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         std::cout << "Scenario 1" << std::endl;
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.3, 0.2, 0.3;
+        position_tune.diagonal() <<  0.3, 0.3, 0.1;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
-        orientation_tune.diagonal() <<  0.2, 0.2, 0.2;
+        orientation_tune.diagonal() <<  0.2, 0.2, 0.25;
         p.position_tune = position_tune;
         p.orientation_tune = orientation_tune;
         p.n_landmark = 6;
         p.measurement_noise = 1.5;
         p.max_landmarks = 150;
         p.max_features = 100;
-        p.kappa = 0.5;
+        p.kappa = 0.8; //0.55
 
         muEKF <<        0,                  // x dot
                         0,                  // y dot
@@ -92,7 +92,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
                         0;                  // Phi
-        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01;
+        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 30e-2, 30e-2, 30e-2;
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
@@ -111,7 +111,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
         // MAP TUNING
         p.max_landmarks = 50;
-        p.max_features = 50000;
+        p.max_features = 10000;
         p.max_bad_frames = 10;
         p.feature_thresh = 0.0001;
         p.initial_pixel_distance_thresh = 150;
@@ -132,7 +132,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         0,                  // Theta dot
                         0,                  // Phi dot
                         0,                  // x
-                        0,                  // y
+                        -5,                  // y
                         -1.8,               // z
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
@@ -142,7 +142,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // PROCESS MODEL
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.2, 0.2, 0.2;
+        position_tune.diagonal() <<  0.3, 0.3, 0.3;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
         orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
@@ -151,12 +151,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         p.camera_states = 12;
 
         // MEASUREMENT MODEL
-        p.measurement_noise = 8;
+        p.measurement_noise = 2;
 
         // MAP TUNING
         p.max_landmarks = 50;
         p.max_features = 50000;
-        p.max_bad_frames = 100;
+        p.max_bad_frames = 150;
         p.feature_thresh = 0.0001;
         p.initial_pixel_distance_thresh = 150;
         p.update_pixel_distance_thresh = 1;
@@ -273,7 +273,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         p.landmarks_seen.push_back(j);
                     } else {
                         // Add new landmark
-                        // initializeNewMarker(yk,mup,Sp,muEKF,SEKF,detected_markers,marker_ids,p,i);
                         // Add new landmark to now seen list
                         bool not_close_to_edge = (detected_markers[i].corners[0].x > 100) && (detected_markers[i].corners[0].x < 1820) && (detected_markers[i].corners[0].y > 100) && (detected_markers[i].corners[0].y < 980);
                         if(not_close_to_edge){
@@ -284,8 +283,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                             Sp.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,n_states+6));
                             muEKF.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
                             mup.conservativeResizeLike(Eigen::MatrixXd::Zero(n_states+6,1));
-                            // S.conservativeResizeLike(Eigen::VectorXd::Zero(S.rows()+6,1));
-                            // S.tail(6) << -1,-1,-1,-1,-1,-1;
                             for(int k = 0; k < 6; k++){
                                 SEKF(SEKF.rows()-6+k,SEKF.rows()-6+k) = p.kappa;
                                 Sp(Sp.rows()-6+k,Sp.rows()-6+k) = p.kappa;
@@ -320,11 +317,12 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // ******************************************************** MEASUREMENT UPDATE ********************************************************
                 // ArucoLogLikelihood aruco_ll;
                 arucoLogLikelihoodAnalytical aruco_ll;
-                std::cout << "frame no. : " << count << std::endl;
+                std::cout << "Frame no. : " << count << std::endl;
                 measurementUpdateIEKFSR1(mup, Sp, u, yk, aruco_ll, p, muf, Sf);
                 muEKF   = muf;
                 SEKF    = Sf;
 
+                // If SR1 method results in nans, run the slower optimizer
                 if (SEKF.hasNaN() || muEKF.hasNaN()){
                     measurementUpdateIEKF(mup, Sp, u, yk, aruco_ll, p, muf, Sf);
                     muEKF   = muf;
@@ -335,7 +333,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             }
             case 2:
             {
-                std::cout << "Scenario 2" << std::endl;
                 // ********************************************************  TIME UPDATE ********************************************************
                 timeUpdateContinuous(muEKF, SEKF, u, pm, p, timestep, mup, Sp);
 
@@ -505,7 +502,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             }
             case 3:
             {
-                std::cout << "Scenario 3" << std::endl;
                 // ********************************************************  TIME UPDATE ********************************************************
                 timeUpdateContinuous(muEKF, SEKF, u, pm, p, timestep, mup, Sp);
 
@@ -543,9 +539,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         Eigen::VectorXd rPNn = mup.segment(12+j*3,3);
                         Eigen::VectorXd rQOi; // placeholder
                         bool inCameraCone = (worldToPixel(rPNn,eta,p.camera_param,rQOi) == 0);
-
-                        std::cout << "state pixel : " << rQOi << std::endl;
-
                         if(isMatch){
                             // Store list of descriptor indexs we used for landmark update (to exclude from surplus descriptors later)
                             // Update our current landmarks keypoints, desciptor, score, visiblity and pixel measurement for this frame
@@ -557,10 +550,11 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                             ducks[j].score = 0;
                             ducks[j].isVisible = true;
                             ducks[j].pixel_measurement = potential_measurements.col(i);
-                            std::cout << "measured pixel : " << potential_measurements.col(i) << std::endl;
                         } else {
                             ducks[j].isVisible = false;
-                            ducks[j].score += 1;
+                            if(inCameraCone){
+                                ducks[j].score += 1;
+                            }
                         }
                     }
                 }
@@ -627,12 +621,6 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                     }
                 }
 
-                // cv::putText(imgout,"frame no. : "+std::to_string(count),cv::Point(60,60),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
-                // cv::putText(imgout,"Number of current landmarks "+std::to_string((mup.rows()-12)/3)+"/"+std::to_string(p.max_landmarks),cv::Point(60,100),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
-                // cv::putText(imgout,"Number of seen landmarks "+std::to_string(p.landmarks_seen.size()),cv::Point(60,140),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
-                // cv::putText(imgout,"World Position (N,E,D) :  ("+std::to_string(muEKF(6))+","+std::to_string(muEKF(7))+","+std::to_string(muEKF(8))+")",cv::Point(60,170),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
-                // cv::putText(imgout,"World Orientation (phi,theta,psi)  :  ("+std::to_string(muEKF(9))+","+std::to_string(muEKF(10))+","+std::to_string(muEKF(11))+")",cv::Point(60,200),cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 0, 0),2);
-
                 // // ******************************************************** MEASUREMENT UPDATE ********************************************************
                 p.ducks = ducks;
                 DuckLogLikelihood point_ll;
@@ -691,7 +679,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 video.write(video_frame);
             }
         }
-        else if ((interactive == 2 && count % 1 == 0) || count == 1000)
+        else if ((interactive == 2 && count % 1 == 0))
         {
             // Hack: call twice to get frame to show
             updatePlotStates(imgout, muPlot, SPlot, param, handles,p);

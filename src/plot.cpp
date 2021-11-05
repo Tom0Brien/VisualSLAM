@@ -773,12 +773,12 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
     imagePlot_update    (handles.ip, outView);
 
     handles.threeDimRenderer->GetActiveCamera()->Azimuth(0);
-    handles.threeDimRenderer->GetActiveCamera()->Elevation(360);
+    handles.threeDimRenderer->GetActiveCamera()->Elevation(0);
 
-    handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(0,0,0);
+    handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(-5,-5,-5);
 
-    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-20,-20,-20);
-    handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-9);
+    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-15,-15,-25);
+    handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-5);
 
     handles.renderWindow->Render();
     handles.renderWindow->SetWindowName("Confidence ellipses");
