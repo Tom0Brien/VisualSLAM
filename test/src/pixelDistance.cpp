@@ -6,7 +6,7 @@
 #include "../../src/cameraModel.hpp"
 #include "../../src/SLAM.h"
 
-SCENARIO("pixel distance test"){
+SCENARIO("Case: pixel is within threshold small threshold of another landmark"){
 
     // Add some landmarks wih keypoints to landmark vector
     std::vector<Landmark> landmarks;
@@ -27,8 +27,6 @@ SCENARIO("pixel distance test"){
     keypoint.pt.x = 0;
     keypoint.pt.y = 0;
 
-
-
     bool withinRadius;
 
     double pixel_distance_thresh = 10;
@@ -38,14 +36,64 @@ SCENARIO("pixel distance test"){
             REQUIRE(withinRadius == true);
         }
     }
-    pixel_distance_thresh = 200;
+}
+
+SCENARIO("Case: pixel is within threshold of another landmark with large threshold"){
+
+    // Add some landmarks wih keypoints to landmark vector
+    std::vector<Landmark> landmarks;
+    Landmark temp_landmark;
+    cv::KeyPoint keypoint2;
+    temp_landmark.keypoint.pt.x = 0;
+    temp_landmark.keypoint.pt.y = 0;
+
+    landmarks.push_back(temp_landmark);
+
+    temp_landmark.keypoint.pt.x = 100;
+    temp_landmark.keypoint.pt.y = 0;
+
+    landmarks.push_back(temp_landmark);
+
+    // generate a keypoint to test
+    cv::KeyPoint keypoint;
+    keypoint.pt.x = 0;
+    keypoint.pt.y = 0;
+
+    bool withinRadius;
+
+    double pixel_distance_thresh = 200;
     WHEN("pixel is close and pixel distance threshold is 200"){
         withinRadius = pixelDistance(landmarks,keypoint,pixel_distance_thresh);
         THEN("result is true") {
             REQUIRE(withinRadius == true);
         }
     }
+}
 
+SCENARIO("Case: pixel distance test with large threshold but landmark is far away"){
+
+    // Add some landmarks wih keypoints to landmark vector
+    std::vector<Landmark> landmarks;
+    Landmark temp_landmark;
+    cv::KeyPoint keypoint2;
+    temp_landmark.keypoint.pt.x = 0;
+    temp_landmark.keypoint.pt.y = 0;
+
+    landmarks.push_back(temp_landmark);
+
+    temp_landmark.keypoint.pt.x = 100;
+    temp_landmark.keypoint.pt.y = 0;
+
+    landmarks.push_back(temp_landmark);
+
+    // generate a keypoint to test
+    cv::KeyPoint keypoint;
+    keypoint.pt.x = 0;
+    keypoint.pt.y = 0;
+
+    bool withinRadius;
+
+    double pixel_distance_thresh = 200;
     keypoint.pt.x = 500;
     keypoint.pt.y = 500;
 

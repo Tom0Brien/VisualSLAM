@@ -2,7 +2,6 @@
 #define CATCH_CONFIG_COLOUR_ANSI
 #include <catch2/catch.hpp>
 
-#include "../../src/calibrate.h"
 #include "../../src/plot.h"
 #include "../../src/utility.h"
 #include "../../src/model.hpp"
