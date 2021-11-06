@@ -92,7 +92,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                         -3.14159265359/2,   // Psi
                         3.14159265359,      // Theta
                         0;                  // Phi
-        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.1, 0.1, 0.1, 0.01, 0.01, 0.01, 30e-2, 30e-2, 30e-2;
+        SEKF.diagonal() <<  0.25, 0.25, 0.25, 0.1, 0.1, 0.1, 0.025, 0.025, 0.025, 0.001, 0.001, 0.001;
     } else if (scenario == 2){
         std::cout << "Scenario 2" << std::endl;
         // PROCESS MODEL
@@ -142,7 +142,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         // PROCESS MODEL
         Eigen::MatrixXd position_tune(3,3);
         position_tune.setZero();
-        position_tune.diagonal() <<  0.3, 0.3, 0.3;
+        position_tune.diagonal() <<  0.25, 0.25, 0.25;
         Eigen::MatrixXd orientation_tune(3,3);
         orientation_tune.setZero();
         orientation_tune.diagonal() <<  0.05, 0.05, 0.05;
@@ -488,6 +488,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
                 // ******************************************************** MEASUREMENT UPDATE ********************************************************
                 p.landmarks = landmarks;
                 PointLogLikelihood point_ll;
+                // pointLogLikelihoodAnalytical point_ll;
                 measurementUpdateIEKF(mup, Sp, u, yk, point_ll, p, muf, Sf);
                 // measurementUpdateIEKFSR1(mup, Sp, u, yk, point_ll, p, muf, Sf);
                 muEKF   = muf;
@@ -660,7 +661,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
         SPlot.block(0,0,SEKF.rows(),SEKF.rows()) = SEKF;
         if (interactive == 1) {
             updatePlotStates(imgout, muPlot, SPlot, param, handles,p);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
             if(count == no_frames) { //
                 PlotHandles tmpHandles;
                 initPlotStates(muPlot, SPlot, param, tmpHandles,p);
@@ -684,6 +685,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
             // Hack: call twice to get frame to show
             updatePlotStates(imgout, muPlot, SPlot, param, handles,p);
             updatePlotStates(imgout, muPlot, SPlot, param, handles,p);
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
             cv::Mat video_frame = getPlotFrame(handles);
             video.write(video_frame);
             vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
@@ -704,6 +706,7 @@ void runSLAMFromVideo(const std::filesystem::path &videoPath, const std::filesys
 
         if (SEKF.hasNaN() || muEKF.hasNaN()){
             updatePlotStates(imgout, muPlot, SPlot, param, handles,p);
+            std::this_thread::sleep_for(std::chrono::milliseconds(25));
             video.release();
             vtkNew<vtkInteractorStyleTrackballCamera> threeDimInteractorStyle;
             vtkNew<vtkRenderWindowInteractor> threeDimInteractor;

@@ -436,6 +436,116 @@ double PointLogLikelihood::operator()(const Eigen::VectorXd & y, const Eigen::Ve
     return val(fdual);
 }
 
+double pointLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g)
+{
+
+    // Variables
+    Eigen::Matrix<double,Eigen::Dynamic,1> rJNn(3,1);
+    Eigen::Matrix<double,Eigen::Dynamic,1> eta(3,1);
+    Eigen::Matrix<double,Eigen::Dynamic,1> Thetanj(3,1);
+    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> Rnj(3,3);
+    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> Rnc(3,3);
+
+    Eigen::Matrix<double,Eigen::Dynamic,1> Thetanc(3,1);
+    Eigen::Matrix<double,Eigen::Dynamic,1> rJcNn(3,1);
+
+    Thetanc = x.segment(9,3);
+    rpy2rot<double>(Thetanc,Rnc);
+    Eigen::Matrix<double,Eigen::Dynamic,1> rCNn;
+    rCNn = x.segment(6,3);
+
+    Eigen::Matrix<double,Eigen::Dynamic,1> measurement_pixel(2,1);
+    Eigen::Matrix<double,Eigen::Dynamic,1> state_pixel(2,1);
+
+
+    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> Sw2p;
+
+    Eigen::MatrixXd dh_drjcc;
+    Eigen::MatrixXd JrCNn;
+    Eigen::MatrixXd JRnc;
+    Eigen::MatrixXd JrPNn;
+    Eigen::MatrixXd JRnm;
+
+
+    Eigen::MatrixXd Jacobian = Eigen::MatrixXd::Zero(x.rows(),1);
+    Eigen::MatrixXd dhdx = Eigen::MatrixXd::Zero(2,x.rows());
+
+    Eigen::Matrix<double,Eigen::Dynamic,1> h = Eigen::Matrix<double,Eigen::Dynamic,1>::Zero(y.rows(),1);
+
+    WorldToPixelAdaptor w2p;
+
+    Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> SR = param.measurement_noise*Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>::Identity(2,2);
+    double cost = 0;
+    eta = x.segment(6,6);
+    //For each landmark seenauto t_start = std::chrono::high_resolution_clock::now();
+    int count = 0;
+    Eigen::Matrix<double,Eigen::Dynamic,1> g_log(2,1);
+    for(int j = 0; j < param.landmarks.size(); j++) {
+        if(param.landmarks[j].isVisible) {
+        // *** State Predicted Centre of Marker Location *** //
+
+        // *** State Predicted Landmark Location *** //
+        int w2p_flag = w2p(rJcNn,eta,param.camera_param,state_pixel,Sw2p,dh_drjcc); // return [2x12]
+        rJNn = x.segment(12+j*3,3);
+
+        dhdx.fill(0);
+        // Jacobian of the camera position
+        JrCNn = -dh_drjcc;
+        // Jacobian of the corner of landmark
+        JrPNn = dh_drjcc;
+
+        // Camera position jacobian
+        dhdx.block(0,6,2,3) = JrCNn;
+        dhdx.block(0,12+3*j,2,3) = JrPNn;
+
+        // Camera Rotation jacobian
+        JRnc.resize(2,3);
+        Eigen::MatrixXd S1(3,3);
+        Eigen::MatrixXd S2(3,3);
+        Eigen::MatrixXd S3(3,3);
+        S1 << 0,0,0,0,0,-1,0,1,0;
+        S2 << 0,0,1,0,0,0,-1,0,0;
+        S3 << 0,-1,0,1,0,0,0,0,0;
+
+        Eigen::MatrixXd RX = Eigen::MatrixXd::Zero(3,3);
+        Eigen::MatrixXd RY= Eigen::MatrixXd::Zero(3,3);
+        Eigen::MatrixXd RZ= Eigen::MatrixXd::Zero(3,3);
+
+        rotx(eta(3),RX);
+        roty(eta(4),RY);
+        rotz(eta(5),RZ);
+        Eigen::MatrixXd dPsi   =   RZ*S3*RY*RX;
+        Eigen::MatrixXd dTheta =   RZ*RY*S2*RX;
+        Eigen::MatrixXd dPhi   =   RZ*RY*RX*S1;
+
+        JRnc.block(0,0,2,1) = dh_drjcc*Rnc*dPhi.transpose()*(rJcNn - rCNn);
+        JRnc.block(0,1,2,1) = dh_drjcc*Rnc*dTheta.transpose()*(rJcNn - rCNn);
+        JRnc.block(0,2,2,1) = dh_drjcc*Rnc*dPsi.transpose()*(rJcNn - rCNn);
+
+        dhdx.block(0,9,2,3) = JRnc;
+
+            // *** Measurement Point Pixel ***//
+            measurement_pixel = param.landmarks[j].pixel_measurement;
+            if(w2p_flag == 0) {
+                double thresh = 25;
+                cost += logGaussian(measurement_pixel,state_pixel, SR,g_log);
+                Jacobian += dhdx.transpose()*-g_log;
+            }
+        }
+    }
+
+    g = Jacobian;
+    return cost;
+}
+
+double pointLogLikelihoodAnalytical::operator()(const Eigen::VectorXd y, const Eigen::VectorXd & x, const Eigen::VectorXd & u, const SlamParameters & param, Eigen::VectorXd &g, Eigen::MatrixXd &H)
+{
+    double cost = operator()(y, x, u, param, g);
+    H.resize(x.rows(),x.rows());
+    H.setZero();
+    return cost;
+}
+
 template <typename Scalar>
 static Scalar duckLogLikelihood(const Eigen::Matrix<Scalar,Eigen::Dynamic,1> y, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & x, const Eigen::Matrix<Scalar,Eigen::Dynamic,1> & u, const SlamParameters & param)
 {

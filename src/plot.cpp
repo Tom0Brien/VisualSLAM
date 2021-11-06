@@ -732,6 +732,8 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
 
         // Add components to render
         Eigen::Vector3d rgb;
+        Eigen::Matrix<double, Eigen::Dynamic, 1> rQOi;
+        bool inCone = worldToPixel(murPNn,eta,param,rQOi);
         if(std::find(slamparam.landmarks_seen.begin(), slamparam.landmarks_seen.end(), i) != slamparam.landmarks_seen.end()) {
             hsv2rgb(240, 1., 1., r, g, b);
             rgb(0) = 0;
@@ -740,8 +742,6 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
         } else {
             Eigen::Matrix<double, Eigen::Dynamic, 1> eta = mu.segment(6,6);
             CameraParameters param = slamparam.camera_param;
-            Eigen::Matrix<double, Eigen::Dynamic, 1> rQOi;
-            bool inCone = worldToPixel(murPNn,eta,param,rQOi);
             if(inCone == 0) {
                 hsv2rgb(0., 1., 1., r, g, b);
                 rgb(0) = 255;
@@ -756,9 +756,9 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
                 rgb(2) = 0;
             }
         }
-
-        plotFeatureGaussianConfidenceEllipse(outView, murPNn, SrPNn, eta, param, rgb);
-
+        if(inCone == 0){
+            plotFeatureGaussianConfidenceEllipse(outView, murPNn, SrPNn, eta, param, rgb);
+        }
         QuadricPlot & qp = handles.qp_features[i];
         quadricPlot_update(qp, murPNn, SrPNn);
         quadricPlot_getActor(qp)->GetProperty()->SetOpacity(0.5);
@@ -777,7 +777,7 @@ void updatePlotStates(const cv::Mat & view, const Eigen::VectorXd & mu, const Ei
 
     handles.threeDimRenderer->GetActiveCamera()->SetFocalPoint(-5,-5,-5);
 
-    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-15,-15,-25);
+    handles.threeDimRenderer->GetActiveCamera()->SetPosition(-18,-18,-18);
     handles.threeDimRenderer->GetActiveCamera()->SetViewUp(0,0,-5);
 
     handles.renderWindow->Render();
